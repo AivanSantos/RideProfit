@@ -196,7 +196,7 @@ const Index = () => {
               <img 
                 src="/logo.png" 
                 alt="RideProfit Logo" 
-                className="h-16 w-auto mb-4" 
+                className="h-12 w-auto mb-4" 
               />
               <p className="text-foreground/70 mb-6">
                 A solução completa para a gestão financeira da sua família.

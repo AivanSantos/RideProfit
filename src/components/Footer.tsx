@@ -9,7 +9,7 @@ const Footer = () => {
             <img
               src="/logo.png"
               alt="RideProfit Logo"
-              className="h-16 w-auto"
+              className="h-12 w-auto"
             />
             <p className="text-sm text-foreground/70">
               Gerencie suas finanças com facilidade e segurança.

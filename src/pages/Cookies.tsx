@@ -103,7 +103,7 @@ const Cookies = () => {
           <img 
             src="/logo.png" 
             alt="RideProfit Logo" 
-            className="h-10 w-auto mx-auto mb-4" 
+            className="h-12 w-auto mx-auto mb-4" 
           />
           <p>&copy; {new Date().getFullYear()} RideProfit. Todos os direitos reservados.</p>
         </div>

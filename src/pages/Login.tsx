@@ -59,7 +59,7 @@ const Login = () => {
               <img 
                 src="/logo.png" 
                 alt="RideProfit Logo" 
-                className="h-20 w-auto mb-2" 
+                className="h-12 w-auto mb-2" 
               />
             </div>
             <CardTitle className="text-2xl font-bold text-center">Bem-vindo de volta</CardTitle>
