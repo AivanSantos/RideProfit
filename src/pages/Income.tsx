@@ -1,11 +1,14 @@
-
 import { useState, useEffect } from "react";
-import DashboardLayout from "@/components/Dashboard/Layout";
-import FinancialChart from "@/components/FinancialChart";
-import TransactionList from "@/components/TransactionList";
-import AddTransactionModal from "@/components/AddTransactionModal";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { getTransactions, addTransaction, deleteTransaction, Transaction } from "@/lib/supabase-operations";
+import FinancialChart from "@/components/FinancialChart";
+import DashboardLayout from "@/components/Dashboard/Layout";
+import TransactionList from "@/components/TransactionList";
+import AddTransactionModal from "@/components/AddTransactionModal";
 import { 
   Select, 
   SelectContent, 
@@ -30,13 +33,75 @@ import {
 import { generateRandomData, generateRandomTransactions, formatCurrency } from "@/lib/utils";
 
 const Income = () => {
+  const { user } = useAuth();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState({
+    amount: "",
+    description: "",
+    category: "",
+    date: new Date().toISOString().split("T")[0],
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [transactions, setTransactions] = useState<any[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+
+  useEffect(() => {
+    if (user) {
+      loadTransactions();
+    }
+  }, [user]);
+
+  const loadTransactions = async () => {
+    try {
+      const data = await getTransactions(user!.id);
+      setTransactions(data.filter(t => t.type === "income"));
+    } catch (error) {
+      toast.error("Erro ao carregar receitas");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    try {
+      await addTransaction({
+        user_id: user.id,
+        type: "income",
+        amount: parseFloat(formData.amount),
+        description: formData.description,
+        category: formData.category,
+        date: formData.date,
+      });
+
+      toast.success("Receita adicionada com sucesso!");
+      setFormData({
+        amount: "",
+        description: "",
+        category: "",
+        date: new Date().toISOString().split("T")[0],
+      });
+      loadTransactions();
+    } catch (error) {
+      toast.error("Erro ao adicionar receita");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteTransaction(id);
+      toast.success("Receita removida com sucesso!");
+      loadTransactions();
+    } catch (error) {
+      toast.error("Erro ao remover receita");
+    }
+  };
 
   useEffect(() => {
     // Initialize with empty data
@@ -91,6 +156,10 @@ const Income = () => {
     (sum, transaction) => sum + transaction.amount, 
     0
   );
+
+  if (loading) {
+    return <div>Carregando...</div>;
+  }
 
   return (
     <DashboardLayout>
