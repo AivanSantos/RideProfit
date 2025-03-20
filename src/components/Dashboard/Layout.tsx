@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -35,15 +36,22 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { signOut } = useAuth();
 
   // Close sidebar when navigating on mobile
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
 
-  const handleLogout = () => {
-    toast.success("Sessão terminada com sucesso!");
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success("Sessão terminada com sucesso!");
+      navigate("/login");
+    } catch (error) {
+      console.error("Erro ao terminar sessão:", error);
+      toast.error("Erro ao terminar sessão");
+    }
   };
 
   const navigation = [
