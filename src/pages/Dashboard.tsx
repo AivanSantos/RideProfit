@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/Dashboard/Layout";
 import DashboardSummary from "@/components/Dashboard/Summary";
@@ -6,120 +5,73 @@ import TransactionList from "@/components/TransactionList";
 import FinancialChart from "@/components/FinancialChart";
 import { Button } from "@/components/ui/button";
 import AddTransactionModal from "@/components/AddTransactionModal";
-import { generateRandomData } from "@/lib/utils";
 import { PlusCircle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-
-interface Transaction {
-  id: string;
-  description: string;
-  amount: number;
-  date: string;
-  category: string;
-  type: 'expense' | 'income';
-}
+import { useAuth } from "@/contexts/AuthContext";
+import { getTransactions, getTransactionStats, Transaction } from "@/lib/supabase-operations";
+import { toast } from "sonner";
 
 const Dashboard = () => {
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [expenseData, setExpenseData] = useState<any[]>([]);
-  const [incomeData, setIncomeData] = useState<any[]>([]);
+  const [stats, setStats] = useState({
+    totalIncome: 0,
+    totalExpenses: 0,
+    balance: 0,
+  });
+  const [loading, setLoading] = useState(true);
   const isMobile = useIsMobile();
+  const { user } = useAuth();
 
   useEffect(() => {
-    // Load transactions from localStorage if available
-    const storedTransactions = localStorage.getItem('transactions');
-    if (storedTransactions) {
-      setTransactions(JSON.parse(storedTransactions));
-    } else {
-      setTransactions([]);
+    if (user) {
+      loadData();
     }
-    
-    const expenseCategories = ["Alimentação", "Habitação", "Transporte", "Saúde", "Educação", "Lazer", "Outros"];
-    const incomeCategories = ["Salário", "Freelance", "Investimentos", "Presente", "Outros"];
-    
-    // Generate empty data
-    setExpenseData(generateRandomData(expenseCategories));
-    setIncomeData(generateRandomData(incomeCategories));
-  }, []);
+  }, [user]);
 
-  // Update expense and income chart data when transactions change
-  useEffect(() => {
-    if (transactions.length > 0) {
-      updateChartData();
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [transactionsData, statsData] = await Promise.all([
+        getTransactions(user!.id),
+        getTransactionStats(user!.id)
+      ]);
+      
+      setTransactions(transactionsData);
+      setStats(statsData);
+    } catch (error) {
+      console.error("Erro ao carregar dados:", error);
+      toast.error("Erro ao carregar dados do dashboard");
+    } finally {
+      setLoading(false);
     }
-    // Save transactions to localStorage whenever they change
-    localStorage.setItem('transactions', JSON.stringify(transactions));
-  }, [transactions]);
-
-  const updateChartData = () => {
-    // Process expense data
-    const expensesByCategory: Record<string, number> = {};
-    const expenseTransactions = transactions.filter(t => t.type === 'expense');
-    const totalExpenses = expenseTransactions.reduce((sum, t) => sum + t.amount, 0);
-    
-    expenseTransactions.forEach(t => {
-      expensesByCategory[t.category] = (expensesByCategory[t.category] || 0) + t.amount;
-    });
-    
-    const expenseChartData = Object.entries(expensesByCategory).map(([name, amount], index) => ({
-      name,
-      value: totalExpenses > 0 ? Math.round((amount / totalExpenses) * 100) : 0,
-      color: expenseData[index % expenseData.length]?.color || getRandomColor(),
-    }));
-    
-    // Process income data
-    const incomesByCategory: Record<string, number> = {};
-    const incomeTransactions = transactions.filter(t => t.type === 'income');
-    const totalIncome = incomeTransactions.reduce((sum, t) => sum + t.amount, 0);
-    
-    incomeTransactions.forEach(t => {
-      incomesByCategory[t.category] = (incomesByCategory[t.category] || 0) + t.amount;
-    });
-    
-    const incomeChartData = Object.entries(incomesByCategory).map(([name, amount], index) => ({
-      name,
-      value: totalIncome > 0 ? Math.round((amount / totalIncome) * 100) : 0,
-      color: incomeData[index % incomeData.length]?.color || getRandomColor(),
-    }));
-    
-    if (expenseChartData.length > 0) setExpenseData(expenseChartData);
-    if (incomeChartData.length > 0) setIncomeData(incomeChartData);
   };
 
-  const getRandomColor = (): string => {
-    const colors = [
-      '#0ea5e9', // blue
-      '#22c55e', // green
-      '#f59e0b', // amber
-      '#ef4444', // red
-      '#8b5cf6', // violet
-      '#ec4899', // pink
-      '#06b6d4', // cyan
-    ];
-    return colors[Math.floor(Math.random() * colors.length)];
+  const handleAddTransaction = async (newTransaction: Transaction) => {
+    try {
+      setTransactions([newTransaction, ...transactions]);
+      const statsData = await getTransactionStats(user!.id);
+      setStats(statsData);
+      toast.success("Transação adicionada com sucesso!");
+    } catch (error) {
+      console.error("Erro ao adicionar transação:", error);
+      toast.error("Erro ao adicionar transação");
+    }
   };
 
-  const handleAddTransaction = (newTransaction: any) => {
-    const updatedTransactions = [newTransaction, ...transactions];
-    setTransactions(updatedTransactions);
-  };
-
-  // Calculate summary values
-  const income = transactions
-    .filter(t => t.type === "income")
-    .reduce((sum, transaction) => sum + transaction.amount, 0);
-  
-  const expenses = transactions
-    .filter(t => t.type === "expense")
-    .reduce((sum, transaction) => sum + transaction.amount, 0);
-  
-  const balance = income - expenses;
-
-  // Calculate month-over-month changes (would be done with real data in production)
-  const incomeChange = 0;
-  const expensesChange = 0;
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Carregando dashboard...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -132,11 +84,11 @@ const Dashboard = () => {
 
       {/* Summary Cards */}
       <DashboardSummary
-        balance={balance}
-        income={income}
-        expenses={expenses}
-        incomeChange={incomeChange}
-        expensesChange={expensesChange}
+        balance={stats.balance}
+        income={stats.totalIncome}
+        expenses={stats.totalExpenses}
+        incomeChange={0} // TODO: Implementar cálculo de variação
+        expensesChange={0} // TODO: Implementar cálculo de variação
       />
 
       {/* Quick Actions */}
@@ -164,14 +116,12 @@ const Dashboard = () => {
       {/* Charts Section */}
       <div className="grid md:grid-cols-2 gap-4 md:gap-6 my-4 md:my-6">
         <FinancialChart 
-          title="Despesas por Categoria" 
-          data={expenseData} 
-          type="pie" 
+          transactions={transactions}
+          type="expense"
         />
         <FinancialChart 
-          title="Receitas por Fonte" 
-          data={incomeData} 
-          type="pie" 
+          transactions={transactions}
+          type="income"
         />
       </div>
 
