@@ -23,7 +23,6 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Family from "./pages/Family";
 import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +41,8 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => {
+  const { user } = useAuth();
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -79,7 +80,6 @@ const App = () => {
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </main>
-            <Footer />
           </div>
         </Router>
       </TooltipProvider>
