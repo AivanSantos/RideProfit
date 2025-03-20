@@ -6,40 +6,42 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { EyeIcon, EyeOffIcon, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const { signIn } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email || !password) {
-      toast.error("Por favor, preencha todos os campos.");
-      return;
-    }
-    
-    setIsLoading(true);
-    
+    setLoading(true);
+
     try {
-      // Simulação de login (em produção, isso seria uma chamada à API)
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      await signIn(formData.email, formData.password);
       toast.success("Login realizado com sucesso!");
       navigate("/dashboard");
     } catch (error) {
-      toast.error("Erro ao fazer login. Verifique suas credenciais.");
-      console.error(error);
+      toast.error("Email ou senha incorretos");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-white p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-brand-green-light/20 via-white to-white px-4">
       <div className="absolute top-0 left-0 right-0 p-6">
         <Link 
           to="/" 
@@ -62,73 +64,52 @@ const Login = () => {
             </div>
             <CardTitle className="text-2xl font-bold text-center">Bem-vindo de volta</CardTitle>
             <CardDescription className="text-center">
-              Introduza os seus dados para aceder à sua conta
+              Faça login para acessar sua conta
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
-                  placeholder="exemplo@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="h-12"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="seu@email.com"
                 />
               </div>
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Palavra-passe</Label>
-                  <Link 
-                    to="/forgot-password" 
-                    className="text-sm text-primary hover:text-primary/80 transition-colors"
-                  >
-                    Esqueceu a palavra-passe?
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="h-12 pr-10"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOffIcon className="h-5 w-5" />
-                    ) : (
-                      <EyeIcon className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                />
               </div>
-              <Button 
-                type="submit" 
-                className="w-full h-12 text-base font-medium"
-                disabled={isLoading}
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading}
               >
-                {isLoading ? "A entrar..." : "Entrar"}
+                {loading ? "Entrando..." : "Entrar"}
               </Button>
             </form>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <div className="text-center text-sm">
-              Ainda não tem conta?{" "}
+              Não tem uma conta?{" "}
               <Link 
                 to="/register" 
                 className="text-primary hover:text-primary/80 font-medium transition-colors"
               >
-                Registar agora
+                Crie uma agora
               </Link>
             </div>
           </CardFooter>

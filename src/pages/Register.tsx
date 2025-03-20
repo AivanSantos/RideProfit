@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { EyeIcon, EyeOffIcon, ArrowLeft, PlusCircle, MinusCircle, User } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Register = () => {
   const [fullName, setFullName] = useState("");
@@ -18,6 +19,7 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [step, setStep] = useState(1);
   const navigate = useNavigate();
+  const { signUp } = useAuth();
 
   const handleAddFamilyMember = () => {
     if (familyMembers.length < 3) {
@@ -75,25 +77,39 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     setIsLoading(true);
-    
+
     try {
-      // Simulação de registro (em produção, isso seria uma chamada à API)
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast.success("Conta criada com sucesso!");
-      navigate("/dashboard");
+      if (password !== confirmPassword) {
+        toast.error("As senhas não coincidem");
+        return;
+      }
+
+      await signUp(email, password);
+      toast.success("Conta criada com sucesso! Verifique seu email.");
+      navigate("/login");
     } catch (error) {
       toast.error("Erro ao criar conta. Tente novamente.");
-      console.error(error);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    if (name === "name") {
+      setFullName(value);
+    } else if (name === "email") {
+      setEmail(value);
+    } else if (name === "password") {
+      setPassword(value);
+    } else if (name === "confirmPassword") {
+      setConfirmPassword(value);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-white p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-brand-green-light/20 via-white to-white px-4">
       <div className="absolute top-0 left-0 right-0 p-6">
         <Link 
           to="/" 
@@ -126,78 +142,52 @@ const Register = () => {
               {step === 1 ? (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="fullName">Nome Completo</Label>
+                    <Label htmlFor="name">Nome</Label>
                     <Input
-                      id="fullName"
+                      id="name"
+                      name="name"
                       type="text"
-                      placeholder="Insira o seu nome completo"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
                       required
-                      className="h-12"
+                      value={fullName}
+                      onChange={handleChange}
+                      placeholder="Seu nome completo"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
+                      name="email"
                       type="email"
-                      placeholder="exemplo@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="h-12"
+                      value={email}
+                      onChange={handleChange}
+                      placeholder="seu@email.com"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="password">Palavra-passe</Label>
-                    <div className="relative">
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="h-12 pr-10"
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? (
-                          <EyeOffIcon className="h-5 w-5" />
-                        ) : (
-                          <EyeIcon className="h-5 w-5" />
-                        )}
-                      </button>
-                    </div>
+                    <Label htmlFor="password">Senha</Label>
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      required
+                      value={password}
+                      onChange={handleChange}
+                      placeholder="••••••••"
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirmar Palavra-passe</Label>
-                    <div className="relative">
-                      <Input
-                        id="confirmPassword"
-                        type={showConfirmPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                        className="h-12 pr-10"
-                      />
-                      <button
-                        type="button"
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      >
-                        {showConfirmPassword ? (
-                          <EyeOffIcon className="h-5 w-5" />
-                        ) : (
-                          <EyeIcon className="h-5 w-5" />
-                        )}
-                      </button>
-                    </div>
+                    <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+                    <Input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type="password"
+                      required
+                      value={confirmPassword}
+                      onChange={handleChange}
+                      placeholder="••••••••"
+                    />
                   </div>
                   <Button 
                     type="button" 
