@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { EyeIcon, EyeOffIcon, ArrowLeft, PlusCircle, MinusCircle, User } from "lucide-react";
 import { toast } from "sonner";
-import { useAuth } from "@/contexts/AuthContext";
 
 const Register = () => {
   const [fullName, setFullName] = useState("");
@@ -19,8 +18,6 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [step, setStep] = useState(1);
   const navigate = useNavigate();
-  const { signUp } = useAuth();
-  const [error, setError] = useState("");
 
   const handleAddFamilyMember = () => {
     if (familyMembers.length < 3) {
@@ -78,27 +75,25 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-
-    if (password !== confirmPassword) {
-      setError("As senhas não coincidem");
-      return;
-    }
-
+    
     setIsLoading(true);
-
+    
     try {
-      await signUp(email, password);
+      // Simulação de registro (em produção, isso seria uma chamada à API)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      toast.success("Conta criada com sucesso!");
       navigate("/dashboard");
-    } catch (err) {
-      setError("Erro ao criar conta. Tente novamente.");
+    } catch (error) {
+      toast.error("Erro ao criar conta. Tente novamente.");
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-brand-green-light/20 via-white to-white px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-white p-4">
       <div className="absolute top-0 left-0 right-0 p-6">
         <Link 
           to="/" 
@@ -109,99 +104,205 @@ const Register = () => {
         </Link>
       </div>
       
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-2xl shadow-lg">
-        <div className="text-center">
-          <h2 className="text-3xl font-display font-bold text-foreground">
-            Criar conta
-          </h2>
-          <p className="mt-2 text-foreground/70">
-            Comece a gerenciar suas finanças hoje
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          {error && (
-            <div className="bg-red-50 text-red-500 p-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-foreground"
-              >
-                Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1"
-                placeholder="seu@email.com"
+      <div className="w-full max-w-md">
+        <Card className="w-full shadow-xl animate-fadeIn">
+          <CardHeader className="space-y-1">
+            <div className="flex justify-center mb-4">
+              <img 
+                src="/logo.png" 
+                alt="RideProfit Logo" 
+                className="h-20 w-auto mb-2" 
               />
             </div>
-
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-foreground"
+            <CardTitle className="text-2xl font-bold text-center">Criar uma conta</CardTitle>
+            <CardDescription className="text-center">
+              {step === 1 
+                ? "Introduza os seus dados para criar uma conta" 
+                : "Adicione os membros da sua família (opcional)"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {step === 1 ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Nome Completo</Label>
+                    <Input
+                      id="fullName"
+                      type="text"
+                      placeholder="Insira o seu nome completo"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                      className="h-12"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="exemplo@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="h-12"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Palavra-passe</Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="h-12 pr-10"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOffIcon className="h-5 w-5" />
+                        ) : (
+                          <EyeIcon className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirmar Palavra-passe</Label>
+                    <div className="relative">
+                      <Input
+                        id="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        className="h-12 pr-10"
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOffIcon className="h-5 w-5" />
+                        ) : (
+                          <EyeIcon className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  <Button 
+                    type="button" 
+                    className="w-full h-12 text-base font-medium"
+                    onClick={handleNextStep}
+                  >
+                    Continuar
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Label>Membros da Família (Opcional)</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleAddFamilyMember}
+                        disabled={familyMembers.length >= 3}
+                        className="h-8 px-2"
+                      >
+                        <PlusCircle className="h-4 w-4 mr-1" />
+                        <span>Adicionar</span>
+                      </Button>
+                    </div>
+                    
+                    {familyMembers.map((member, index) => (
+                      <div key={index} className="space-y-3 p-4 bg-gray-50 rounded-md relative">
+                        <div className="absolute top-2 right-2">
+                          {index > 0 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveFamilyMember(index)}
+                              className="h-6 w-6 p-0"
+                            >
+                              <MinusCircle className="h-4 w-4 text-red-500" />
+                            </Button>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2 mb-2">
+                          <User className="h-5 w-5 text-primary" />
+                          <span className="font-medium">Membro {index + 1}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label htmlFor={`name-${index}`}>Nome</Label>
+                            <Input
+                              id={`name-${index}`}
+                              value={member.name}
+                              onChange={(e) => handleFamilyMemberChange(index, "name", e.target.value)}
+                              placeholder="Nome"
+                              className="h-10"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`relation-${index}`}>Relação</Label>
+                            <Input
+                              id={`relation-${index}`}
+                              value={member.relation}
+                              onChange={(e) => handleFamilyMemberChange(index, "relation", e.target.value)}
+                              placeholder="Ex: Cônjuge"
+                              className="h-10"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="flex space-x-3 mt-6">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      className="flex-1 h-12"
+                      onClick={handlePrevStep}
+                    >
+                      Voltar
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      className="flex-1 h-12"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? "A processar..." : "Criar Conta"}
+                    </Button>
+                  </div>
+                </>
+              )}
+            </form>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <div className="text-center text-sm">
+              Já tem uma conta?{" "}
+              <Link 
+                to="/login" 
+                className="text-primary hover:text-primary/80 font-medium transition-colors"
               >
-                Senha
-              </label>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1"
-                placeholder="••••••••"
-              />
+                Entrar
+              </Link>
             </div>
-
-            <div>
-              <label
-                htmlFor="confirmPassword"
-                className="block text-sm font-medium text-foreground"
-              >
-                Confirmar Senha
-              </label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="mt-1"
-                placeholder="••••••••"
-              />
-            </div>
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isLoading}
-          >
-            {isLoading ? "Criando conta..." : "Criar conta"}
-          </Button>
-        </form>
-
-        <div className="text-center">
-          <p className="text-sm text-foreground/70">
-            Já tem uma conta?{" "}
-            <Link
-              to="/login"
-              className="font-medium text-brand-blue hover:text-brand-blue/80"
-            >
-              Faça login
-            </Link>
-          </p>
-        </div>
+          </CardFooter>
+        </Card>
       </div>
     </div>
   );
