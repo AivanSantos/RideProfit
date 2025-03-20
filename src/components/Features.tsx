@@ -1,36 +1,36 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, PieChart, Users, Bell, Wallet, Calendar, TrendingUp } from "lucide-react";
+import { ArrowRight, PieChart, Users, Bell, Wallet, Calendar, TrendingUp, PiggyBank, LineChart, Shield } from "lucide-react";
 
 const Features = () => {
   return (
-    <section id="funcionalidades" className="py-24 bg-gradient-to-b from-white via-brand-green-light/10 to-white section-padding">
-      <div className="container mx-auto">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <span className="inline-block px-3 py-1 rounded-full bg-brand-blue/10 text-brand-blue mb-4 text-sm font-medium">
-            Funcionalidades
-          </span>
-          <h2 className="text-3xl md:text-4xl font-display font-bold mb-6">
-            Tudo que você precisa para{" "}
-            <span className="text-brand-blue">controlar suas finanças</span>
+    <section className="py-16 sm:py-24 bg-white">
+      <div className="container mx-auto px-4 sm:px-6">
+        <div className="text-center mb-12 sm:mb-16">
+          <h2 className="text-3xl sm:text-4xl font-display font-bold mb-4">
+            Recursos Poderosos
           </h2>
-          <p className="text-foreground/70 text-lg">
-            O RideProfit oferece um conjunto completo de ferramentas para ajudar a sua família
-            a alcançar seus objetivos financeiros.
+          <p className="text-base sm:text-lg text-foreground/70 max-w-2xl mx-auto">
+            Tudo que você precisa para gerenciar suas finanças de forma eficiente e
+            segura.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
           {features.map((feature, index) => (
             <div
               key={index}
-              className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+              className="p-6 sm:p-8 rounded-xl bg-white border border-border/50 hover:border-brand-blue/20 transition-colors duration-300"
             >
-              <div className="bg-brand-green-light/20 w-12 h-12 rounded-lg flex items-center justify-center mb-6">
-                <feature.icon className="h-6 w-6 text-brand-blue" />
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg bg-brand-blue/10 flex items-center justify-center mb-4 sm:mb-6">
+                <feature.icon className="w-6 h-6 sm:w-7 sm:h-7 text-brand-blue" />
               </div>
-              <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-              <p className="text-foreground/70">{feature.description}</p>
+              <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3">
+                {feature.title}
+              </h3>
+              <p className="text-sm sm:text-base text-foreground/70">
+                {feature.description}
+              </p>
             </div>
           ))}
         </div>
@@ -50,40 +50,28 @@ const Features = () => {
 
 const features = [
   {
-    title: "Gestão de Despesas",
-    description:
-      "Registre e categorize suas despesas facilmente, com visualização clara de para onde vai seu dinheiro.",
     icon: Wallet,
-  },
-  {
-    title: "Orçamento Familiar",
+    title: "Controle Total",
     description:
-      "Crie orçamentos personalizados e acompanhe os gastos de toda a família em tempo real.",
-    icon: Users,
+      "Gerencie todas as suas contas, cartões e investimentos em um só lugar.",
   },
   {
+    icon: PiggyBank,
+    title: "Economia Inteligente",
+    description:
+      "Receba alertas de gastos e sugestões personalizadas para economizar.",
+  },
+  {
+    icon: LineChart,
     title: "Relatórios Detalhados",
     description:
-      "Visualize relatórios e gráficos interativos que mostram sua situação financeira de forma clara.",
-    icon: PieChart,
+      "Visualize seus gastos e receitas com gráficos e relatórios completos.",
   },
   {
-    title: "Lembretes Inteligentes",
+    icon: Shield,
+    title: "Segurança Máxima",
     description:
-      "Receba notificações sobre contas a pagar, metas a atingir e limites de orçamento.",
-    icon: Bell,
-  },
-  {
-    title: "Planejamento Futuro",
-    description:
-      "Estabeleça metas financeiras e acompanhe seu progresso com projeções realistas.",
-    icon: TrendingUp,
-  },
-  {
-    title: "Despesas Recorrentes",
-    description:
-      "Automatize o registro de despesas fixas e receba lembretes de pagamentos.",
-    icon: Calendar,
+      "Seus dados estão protegidos com criptografia de ponta a ponta.",
   },
 ];
 
