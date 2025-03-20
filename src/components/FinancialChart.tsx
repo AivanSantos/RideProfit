@@ -15,8 +15,12 @@ interface FinancialChartProps {
   type: "income" | "expense";
 }
 
-export default function FinancialChart({ transactions, type }: FinancialChartProps) {
+export default function FinancialChart({ transactions = [], type }: FinancialChartProps) {
   const chartData = useMemo(() => {
+    if (!transactions || transactions.length === 0) {
+      return [];
+    }
+
     const groupedData = transactions.reduce((acc, transaction) => {
       const date = new Date(transaction.date).toLocaleDateString();
       if (!acc[date]) {
@@ -31,6 +35,14 @@ export default function FinancialChart({ transactions, type }: FinancialChartPro
       amount,
     }));
   }, [transactions]);
+
+  if (!transactions || transactions.length === 0) {
+    return (
+      <div className="h-[300px] w-full flex items-center justify-center">
+        <p className="text-gray-500">Sem dados para exibir</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[300px] w-full">

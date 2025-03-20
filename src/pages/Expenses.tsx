@@ -30,7 +30,7 @@ import {
   Download,
   Share2
 } from "lucide-react";
-import { generateRandomData, generateRandomTransactions, formatCurrency } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 
 const Expenses = () => {
   const { user } = useAuth();
@@ -43,8 +43,7 @@ const Expenses = () => {
     date: new Date().toISOString().split("T")[0],
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [chartData, setChartData] = useState<any[]>([]);
-  const [filteredTransactions, setFilteredTransactions] = useState<any[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
@@ -57,9 +56,13 @@ const Expenses = () => {
 
   const loadTransactions = async () => {
     try {
+      setLoading(true);
       const data = await getTransactions(user!.id);
-      setTransactions(data.filter(t => t.type === "expense"));
+      const expenseTransactions = data.filter(t => t.type === "expense");
+      setTransactions(expenseTransactions);
+      setFilteredTransactions(expenseTransactions);
     } catch (error) {
+      console.error("Erro ao carregar despesas:", error);
       toast.error("Erro ao carregar despesas");
     } finally {
       setLoading(false);
@@ -104,15 +107,6 @@ const Expenses = () => {
   };
 
   useEffect(() => {
-    // Initialize with empty data
-    setTransactions([]);
-    setFilteredTransactions([]);
-    
-    const expenseCategories = ["Alimentação", "Habitação", "Transporte", "Saúde", "Educação", "Lazer", "Outros"];
-    setChartData(generateRandomData(expenseCategories));
-  }, []);
-
-  useEffect(() => {
     let filtered = [...transactions];
     
     if (searchTerm) {
@@ -121,15 +115,14 @@ const Expenses = () => {
       );
     }
     
-    if (categoryFilter) {
+    if (categoryFilter && categoryFilter !== "all") {
       filtered = filtered.filter(t => t.category === categoryFilter);
     }
     
     if (dateFilter) {
-      // This is a simplified filter by month, in a real app you'd have a proper date range selector
       const [year, month] = dateFilter.split("-");
       filtered = filtered.filter(t => {
-        const transDate = new Date(t.date.split("/").reverse().join("-"));
+        const transDate = new Date(t.date);
         return (
           transDate.getFullYear() === parseInt(year) && 
           transDate.getMonth() === parseInt(month) - 1
@@ -140,7 +133,7 @@ const Expenses = () => {
     setFilteredTransactions(filtered);
   }, [searchTerm, categoryFilter, dateFilter, transactions]);
 
-  const handleAddTransaction = (newTransaction: any) => {
+  const handleAddTransaction = (newTransaction: Transaction) => {
     setTransactions([newTransaction, ...transactions]);
     setFilteredTransactions([newTransaction, ...filteredTransactions]);
   };
@@ -158,7 +151,16 @@ const Expenses = () => {
   );
 
   if (loading) {
-    return <div>Carregando...</div>;
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Carregando despesas...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
   }
 
   return (
@@ -272,23 +274,28 @@ const Expenses = () => {
 
       {/* Charts & Transactions */}
       <div className="grid md:grid-cols-2 gap-6 mb-6">
-        <FinancialChart 
-          title="Despesas por Categoria" 
-          data={chartData} 
-          type="pie" 
-        />
-        <FinancialChart 
-          title="Despesas Mensais" 
-          data={[
-            { name: "Jan", value: 0, color: "#0ea5e9" },
-            { name: "Fev", value: 0, color: "#22c55e" },
-            { name: "Mar", value: 0, color: "#f59e0b" },
-            { name: "Abr", value: 0, color: "#ef4444" },
-            { name: "Mai", value: 0, color: "#8b5cf6" },
-            { name: "Jun", value: 0, color: "#ec4899" },
-          ]} 
-          type="bar" 
-        />
+        <Card>
+          <CardHeader>
+            <CardTitle>Despesas por Categoria</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FinancialChart 
+              transactions={transactions}
+              type="expense"
+            />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Despesas Mensais</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FinancialChart 
+              transactions={transactions}
+              type="expense"
+            />
+          </CardContent>
+        </Card>
       </div>
 
       {/* Transactions List */}
