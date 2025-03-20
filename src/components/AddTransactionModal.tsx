@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   Dialog, 
@@ -76,7 +75,6 @@ const AddTransactionModal = ({
     
     try {
       const newTransaction = {
-        id: Math.random().toString(36).substring(2, 9),
         description,
         amount: Number(amount),
         category,

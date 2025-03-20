@@ -50,9 +50,7 @@ const Dashboard = () => {
 
   const handleAddTransaction = async (newTransaction: Transaction) => {
     try {
-      setTransactions([newTransaction, ...transactions]);
-      const statsData = await getTransactionStats(user!.id);
-      setStats(statsData);
+      await loadData();
       toast.success("Transação adicionada com sucesso!");
     } catch (error) {
       console.error("Erro ao adicionar transação:", error);
