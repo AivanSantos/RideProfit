@@ -1,4 +1,4 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { formatCurrency } from "@/lib/utils";
 
 interface PieChartData {
@@ -12,9 +12,6 @@ interface PieChart3DProps {
   title: string;
 }
 
-const RADIAN = Math.PI / 180;
-const DEPTH = 20;
-
 const PieChart3D = ({ data, title }: PieChart3DProps) => {
   // Criar efeito 3D com gradientes
   const gradients = data.map((entry, index) => ({
@@ -23,7 +20,7 @@ const PieChart3D = ({ data, title }: PieChart3DProps) => {
   }));
 
   return (
-    <div className="h-[350px] w-full">
+    <div className="h-[400px] w-full">
       <h3 className="text-lg font-semibold mb-4">{title}</h3>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
@@ -46,7 +43,7 @@ const PieChart3D = ({ data, title }: PieChart3DProps) => {
                 <stop
                   offset="100%"
                   stopColor={gradient.color}
-                  stopOpacity={0.6}
+                  stopOpacity={0.7}
                 />
               </linearGradient>
             ))}
@@ -55,7 +52,7 @@ const PieChart3D = ({ data, title }: PieChart3DProps) => {
           {/* Sombra do gráfico */}
           <Pie
             data={data}
-            cx="50%"
+            cx="40%"
             cy="50%"
             innerRadius={60}
             outerRadius={80}
@@ -89,7 +86,7 @@ const PieChart3D = ({ data, title }: PieChart3DProps) => {
           {/* Gráfico principal */}
           <Pie
             data={data}
-            cx="50%"
+            cx="40%"
             cy="50%"
             innerRadius={60}
             outerRadius={80}
@@ -110,11 +107,36 @@ const PieChart3D = ({ data, title }: PieChart3DProps) => {
             ))}
           </Pie>
 
+          {/* Legenda fixa */}
+          <Legend
+            layout="vertical"
+            verticalAlign="middle"
+            align="right"
+            wrapperStyle={{
+              paddingLeft: "20px",
+              fontSize: "14px",
+              color: "#666"
+            }}
+            formatter={(value: string) => (
+              <span className="text-sm">{value}</span>
+            )}
+          />
+
           <Tooltip
             formatter={(value: number, name: string) => [
               formatCurrency(value),
               name,
             ]}
+            contentStyle={{
+              backgroundColor: "rgba(255, 255, 255, 0.9)",
+              border: "1px solid #ccc",
+              borderRadius: "4px",
+              padding: "8px"
+            }}
+            labelStyle={{
+              color: "#666",
+              fontWeight: "bold"
+            }}
           />
         </PieChart>
       </ResponsiveContainer>
