@@ -13,12 +13,9 @@ interface PieChart3DProps {
 }
 
 const PieChart3D = ({ data, title }: PieChart3DProps) => {
-  // Criar array de cores para o Recharts
-  const COLORS = data.map(entry => entry.color);
-
   return (
-    <div className="h-[400px] w-full">
-      <h3 className="text-lg font-semibold mb-4">{title}</h3>
+    <div className="h-[300px] sm:h-[400px] w-full">
+      <h3 className="text-base sm:text-lg font-semibold mb-2 sm:mb-4">{title}</h3>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           {/* Sombra do gráfico */}
@@ -26,8 +23,8 @@ const PieChart3D = ({ data, title }: PieChart3DProps) => {
             data={data}
             cx="40%"
             cy="50%"
-            innerRadius={60}
-            outerRadius={80}
+            innerRadius={40}
+            outerRadius={60}
             paddingAngle={5}
             dataKey="value"
             startAngle={90}
@@ -48,10 +45,10 @@ const PieChart3D = ({ data, title }: PieChart3DProps) => {
             {data.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
-                fill={COLORS[index % COLORS.length]}
-                stroke={COLORS[index % COLORS.length]}
+                fill={entry.color}
+                stroke={entry.color}
                 strokeWidth={1}
-                style={{ filter: "brightness(0.8)" }}
+                style={{ opacity: 0.8 }}
               />
             ))}
           </Pie>
@@ -61,21 +58,24 @@ const PieChart3D = ({ data, title }: PieChart3DProps) => {
             data={data}
             cx="40%"
             cy="50%"
-            innerRadius={60}
-            outerRadius={80}
+            innerRadius={40}
+            outerRadius={60}
             paddingAngle={5}
             dataKey="value"
             startAngle={90}
             endAngle={450}
             blendStroke
             isAnimationActive={true}
+            fill="#FF5733"
+            stroke="#FF5733"
           >
             {data.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
-                fill={COLORS[index % COLORS.length]}
-                stroke={COLORS[index % COLORS.length]}
+                fill={entry.color}
+                stroke={entry.color}
                 strokeWidth={1}
+                style={{ opacity: 1 }}
               />
             ))}
           </Pie>
@@ -86,17 +86,17 @@ const PieChart3D = ({ data, title }: PieChart3DProps) => {
             verticalAlign="middle"
             align="right"
             wrapperStyle={{
-              paddingLeft: "20px",
-              fontSize: "14px",
+              paddingLeft: "10px",
+              fontSize: "12px",
               color: "#666"
             }}
             formatter={(value: string) => (
-              <span className="text-sm">{value}</span>
+              <span className="text-xs sm:text-sm">{value}</span>
             )}
             payload={data.map((entry, index) => ({
               value: entry.name,
               type: "circle",
-              color: COLORS[index % COLORS.length],
+              color: entry.color,
               id: `legend-${index}`
             }))}
           />
@@ -110,11 +110,13 @@ const PieChart3D = ({ data, title }: PieChart3DProps) => {
               backgroundColor: "rgba(255, 255, 255, 0.9)",
               border: "1px solid #ccc",
               borderRadius: "4px",
-              padding: "8px"
+              padding: "8px",
+              fontSize: "12px"
             }}
             labelStyle={{
               color: "#666",
-              fontWeight: "bold"
+              fontWeight: "bold",
+              fontSize: "12px"
             }}
           />
         </PieChart>
