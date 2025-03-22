@@ -85,7 +85,7 @@ const Register = () => {
         return;
       }
 
-      await signUp(email, password);
+      await signUp(email, password, fullName);
       toast.success("Conta criada com sucesso! Verifique seu email.");
       navigate("/login");
     } catch (error) {

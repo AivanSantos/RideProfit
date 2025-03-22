@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/Dashboard/Layout";
 import { 
   Card, 
@@ -9,197 +8,267 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Save, Bell, Shield, Globe, Moon } from "lucide-react";
+import { 
+  Settings as SettingsIcon, 
+  Bell, 
+  Lock, 
+  Palette, 
+  Globe, 
+  Save,
+  Moon,
+  Sun,
+  BellRing,
+  BellOff
+} from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { useNavigate } from "react-router-dom";
+import { Switch } from "@/components/ui/switch";
 
 const Settings = () => {
+  const navigate = useNavigate();
   const [settings, setSettings] = useState({
-    currency: "EUR",
-    language: "pt-PT",
+    notifications: true,
     darkMode: false,
-    emailNotifications: true,
-    pushNotifications: false,
-    twoFactorAuth: false
+    language: "pt",
+    currency: "EUR",
+    timezone: "Europe/Lisbon"
   });
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleSwitchChange = (name: string) => {
-    setSettings(prev => ({
-      ...prev,
-      [name]: !prev[name as keyof typeof prev]
-    }));
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) throw userError;
+      if (!user) {
+        navigate('/login');
+        return;
+      }
+
+      // Buscar configurações do usuário
+      const { data: userSettings, error: settingsError } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (settingsError && settingsError.code !== 'PGRST116') {
+        throw settingsError;
+      }
+
+      if (userSettings) {
+        setSettings(userSettings);
+      } else {
+        // Criar configurações padrão se não existirem
+        const { error: insertError } = await supabase
+          .from('user_settings')
+          .insert([{
+            user_id: user.id,
+            notifications: true,
+            darkMode: false,
+            language: "pt",
+            currency: "EUR",
+            timezone: "Europe/Lisbon"
+          }]);
+
+        if (insertError) throw insertError;
+      }
+    } catch (error) {
+      console.error('Erro ao carregar configurações:', error);
+      toast.error('Erro ao carregar configurações. Por favor, tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSelectChange = (name: string, value: string) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
     setSettings(prev => ({
       ...prev,
       [name]: value
     }));
   };
 
-  const handleSaveSettings = () => {
-    toast.success("Configurações atualizadas com sucesso!");
+  const handleToggle = (name: string) => {
+    setSettings(prev => ({
+      ...prev,
+      [name]: !prev[name as keyof typeof prev]
+    }));
   };
+
+  const handleSaveSettings = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert({
+          user_id: user.id,
+          ...settings
+        });
+
+      if (error) throw error;
+      toast.success("Configurações atualizadas com sucesso!");
+    } catch (error) {
+      console.error('Erro ao salvar configurações:', error);
+      toast.error('Erro ao salvar configurações. Por favor, tente novamente.');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-2">Configurações</h1>
-        <p className="text-gray-600">
-          Personalize a sua experiência na plataforma
-        </p>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="container mx-auto py-8">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="h-5 w-5" />
-              Preferências Gerais
-            </CardTitle>
+            <CardTitle>Configurações</CardTitle>
             <CardDescription>
-              Defina as suas preferências de exibição e localização
+              Gerencie suas preferências e configurações do sistema
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="currency">Moeda</Label>
-              <Select
-                value={settings.currency}
-                onValueChange={(value) => handleSelectChange("currency", value)}
-              >
-                <SelectTrigger id="currency">
-                  <SelectValue placeholder="Selecione a moeda" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="EUR">Euro (€)</SelectItem>
-                  <SelectItem value="USD">Dólar Americano ($)</SelectItem>
-                  <SelectItem value="GBP">Libra Esterlina (£)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <CardContent>
+            <Tabs defaultValue="notifications" className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="notifications" className="flex items-center gap-2">
+                  <Bell className="h-4 w-4" />
+                  Notificações
+                </TabsTrigger>
+                <TabsTrigger value="appearance" className="flex items-center gap-2">
+                  <Palette className="h-4 w-4" />
+                  Aparência
+                </TabsTrigger>
+                <TabsTrigger value="preferences" className="flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  Preferências
+                </TabsTrigger>
+                <TabsTrigger value="security" className="flex items-center gap-2">
+                  <Lock className="h-4 w-4" />
+                  Segurança
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="notifications" className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Notificações</Label>
+                      <p className="text-sm text-gray-500">
+                        Receber notificações sobre atualizações e novidades
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.notifications}
+                      onCheckedChange={() => handleToggle('notifications')}
+                    />
+                  </div>
+                </div>
+              </TabsContent>
 
-            <div className="space-y-2">
-              <Label htmlFor="language">Idioma</Label>
-              <Select
-                value={settings.language}
-                onValueChange={(value) => handleSelectChange("language", value)}
-              >
-                <SelectTrigger id="language">
-                  <SelectValue placeholder="Selecione o idioma" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pt-PT">Português (Portugal)</SelectItem>
-                  <SelectItem value="en-US">English (US)</SelectItem>
-                  <SelectItem value="es-ES">Español</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <TabsContent value="appearance" className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Modo Escuro</Label>
+                      <p className="text-sm text-gray-500">
+                        Alternar entre tema claro e escuro
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.darkMode}
+                      onCheckedChange={() => handleToggle('darkMode')}
+                    />
+                  </div>
+                </div>
+              </TabsContent>
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="darkMode">Modo Escuro</Label>
-                <p className="text-sm text-gray-500">
-                  Ativar tema escuro para a aplicação
-                </p>
+              <TabsContent value="preferences" className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="language">Idioma</Label>
+                    <select
+                      id="language"
+                      name="language"
+                      value={settings.language}
+                      onChange={handleChange}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="pt">Português</option>
+                      <option value="en">English</option>
+                      <option value="es">Español</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="currency">Moeda</Label>
+                    <select
+                      id="currency"
+                      name="currency"
+                      value={settings.currency}
+                      onChange={handleChange}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="EUR">EUR (€)</option>
+                      <option value="USD">USD ($)</option>
+                      <option value="GBP">GBP (£)</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="timezone">Fuso Horário</Label>
+                    <select
+                      id="timezone"
+                      name="timezone"
+                      value={settings.timezone}
+                      onChange={handleChange}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="Europe/Lisbon">Lisboa (GMT+0)</option>
+                      <option value="America/New_York">Nova York (GMT-4)</option>
+                      <option value="Asia/Tokyo">Tóquio (GMT+9)</option>
+                    </select>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="security" className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Autenticação em Dois Fatores</Label>
+                      <p className="text-sm text-gray-500">
+                        Adicionar uma camada extra de segurança à sua conta
+                      </p>
+                    </div>
+                    <Switch />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <div className="flex justify-end mt-6">
+                <Button onClick={handleSaveSettings}>
+                  <Save className="h-4 w-4 mr-2" />
+                  Salvar Alterações
+                </Button>
               </div>
-              <Switch
-                id="darkMode"
-                checked={settings.darkMode}
-                onCheckedChange={() => handleSwitchChange("darkMode")}
-              />
-            </div>
+            </Tabs>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              Notificações
-            </CardTitle>
-            <CardDescription>
-              Configure como e quando receber notificações
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="emailNotifications">Notificações por Email</Label>
-                <p className="text-sm text-gray-500">
-                  Receba atualizações no seu email
-                </p>
-              </div>
-              <Switch
-                id="emailNotifications"
-                checked={settings.emailNotifications}
-                onCheckedChange={() => handleSwitchChange("emailNotifications")}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="pushNotifications">Notificações Push</Label>
-                <p className="text-sm text-gray-500">
-                  Receba alertas no seu navegador
-                </p>
-              </div>
-              <Switch
-                id="pushNotifications"
-                checked={settings.pushNotifications}
-                onCheckedChange={() => handleSwitchChange("pushNotifications")}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Segurança
-            </CardTitle>
-            <CardDescription>
-              Configure as opções de segurança da sua conta
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="twoFactorAuth">Autenticação de Dois Fatores</Label>
-                <p className="text-sm text-gray-500">
-                  Adicione uma camada extra de segurança à sua conta
-                </p>
-              </div>
-              <Switch
-                id="twoFactorAuth"
-                checked={settings.twoFactorAuth}
-                onCheckedChange={() => handleSwitchChange("twoFactorAuth")}
-              />
-            </div>
-
-            <div className="pt-4">
-              <Button variant="outline" className="w-full md:w-auto">
-                Alterar Senha
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="mt-6 flex justify-end">
-        <Button onClick={handleSaveSettings}>
-          <Save className="h-4 w-4 mr-2" />
-          Guardar Configurações
-        </Button>
       </div>
     </DashboardLayout>
   );
