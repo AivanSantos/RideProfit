@@ -26,16 +26,6 @@ const Dashboard = () => {
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const isMobile = useIsMobile();
 
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate('/login');
-      }
-    };
-    checkUser();
-  }, [navigate]);
-
   const { 
     transactions, 
     addTransaction, 
@@ -46,6 +36,12 @@ const Dashboard = () => {
     balance,
     deleteTransaction
   } = useTransactions();
+
+  useEffect(() => {
+    if (error === 'Usuário não autenticado') {
+      navigate('/login');
+    }
+  }, [error, navigate]);
 
   const handleAddTransaction = async (newTransaction: NewTransaction) => {
     try {
@@ -75,7 +71,7 @@ const Dashboard = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-screen">
+        <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
             <p className="mt-4 text-gray-600">Carregando dashboard...</p>
@@ -85,12 +81,15 @@ const Dashboard = () => {
     );
   }
 
-  if (error) {
+  if (error && error !== 'Usuário não autenticado') {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-screen">
+        <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <p className="text-red-600">Erro ao carregar dados: {error}</p>
+            <p className="text-red-600 mb-4">Erro ao carregar dados: {error}</p>
+            <Button onClick={() => window.location.reload()}>
+              Tentar novamente
+            </Button>
           </div>
         </div>
       </DashboardLayout>
