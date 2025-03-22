@@ -71,9 +71,11 @@ const TransactionList = ({ transactions, title, showViewAll = false }: Transacti
     try {
       await deleteTransaction(id);
       toast.success("Transação excluída com sucesso!");
-    } catch (error) {
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error(error.message);
+      }
       toast.error("Erro ao excluir transação.");
-      console.error(error);
     }
   };
 
