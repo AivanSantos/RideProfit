@@ -6,8 +6,11 @@ DROP POLICY IF EXISTS "Users can insert their own settings" ON user_settings;
 -- Drop existing trigger if it exists
 DROP TRIGGER IF EXISTS handle_user_settings_updated_at ON user_settings;
 
+-- Drop existing table if it exists
+DROP TABLE IF EXISTS user_settings;
+
 -- Create user_settings table
-CREATE TABLE IF NOT EXISTS user_settings (
+CREATE TABLE user_settings (
   user_id UUID REFERENCES auth.users ON DELETE CASCADE,
   notifications BOOLEAN DEFAULT true,
   dark_mode BOOLEAN DEFAULT false,
