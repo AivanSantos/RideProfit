@@ -19,11 +19,11 @@ import {
   Pencil,
   Trash2
 } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import AddTransactionModal from "./AddTransactionModal";
 import { useTransactions } from "@/contexts/TransactionContext";
+import { useCurrency } from "@/hooks/useCurrency";
 
 interface Transaction {
   id: string;
@@ -53,6 +53,7 @@ const categoryIcons: Record<string, any> = {
 const TransactionList = ({ transactions, title, showViewAll = false }: TransactionListProps) => {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const { deleteTransaction } = useTransactions();
+  const { formatCurrency } = useCurrency();
 
   const getIcon = (category: string, type: string) => {
     if (type === "income") {

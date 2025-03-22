@@ -1,128 +1,74 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
-import { formatCurrency } from "@/lib/utils";
+import { useEffect, useRef } from "react";
+import { useCurrency } from "@/hooks/useCurrency";
+import * as echarts from "echarts";
+import type { CallbackDataParams, TooltipFormatterCallback } from "echarts/types/dist/shared";
 
-interface PieChartData {
+interface DataItem {
   name: string;
   value: number;
-  color: string;
 }
 
 interface PieChart3DProps {
-  data: PieChartData[];
-  title: string;
+  data: DataItem[];
+  title?: string;
 }
 
-const PieChart3D = ({ data, title }: PieChart3DProps) => {
-  return (
-    <div className="h-[300px] sm:h-[400px] w-full">
-      <h3 className="text-base sm:text-lg font-semibold mb-2 sm:mb-4">{title}</h3>
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          {/* Sombra do gráfico */}
-          <Pie
-            data={data}
-            cx="40%"
-            cy="50%"
-            innerRadius={40}
-            outerRadius={60}
-            paddingAngle={5}
-            dataKey="value"
-            startAngle={90}
-            endAngle={450}
-            blendStroke
-            isAnimationActive={true}
-            filter="url(#shadow)"
-          >
-            <filter id="shadow" height="200%">
-              <feDropShadow
-                dx="0"
-                dy="4"
-                stdDeviation="4"
-                floodColor="#000"
-                floodOpacity="0.2"
-              />
-            </filter>
-            {data.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={entry.color}
-                stroke={entry.color}
-                strokeWidth={1}
-                style={{ opacity: 0.8 }}
-              />
-            ))}
-          </Pie>
+export default function PieChart3D({ data, title }: PieChart3DProps) {
+  const chartRef = useRef<HTMLDivElement>(null);
+  const { formatCurrency } = useCurrency();
+  let chart: echarts.ECharts | null = null;
 
-          {/* Gráfico principal */}
-          <Pie
-            data={data}
-            cx="40%"
-            cy="50%"
-            innerRadius={40}
-            outerRadius={60}
-            paddingAngle={5}
-            dataKey="value"
-            startAngle={90}
-            endAngle={450}
-            blendStroke
-            isAnimationActive={true}
-            fill="#FF5733"
-            stroke="#FF5733"
-          >
-            {data.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={entry.color}
-                stroke={entry.color}
-                strokeWidth={1}
-                style={{ opacity: 1 }}
-              />
-            ))}
-          </Pie>
+  useEffect(() => {
+    if (chartRef.current) {
+      chart = echarts.init(chartRef.current);
 
-          {/* Legenda fixa */}
-          <Legend
-            layout="vertical"
-            verticalAlign="middle"
-            align="right"
-            wrapperStyle={{
-              paddingLeft: "10px",
-              fontSize: "12px",
-              color: "#666"
-            }}
-            formatter={(value: string) => (
-              <span className="text-xs sm:text-sm">{value}</span>
-            )}
-            payload={data.map((entry, index) => ({
-              value: entry.name,
-              type: "circle",
-              color: entry.color,
-              id: `legend-${index}`
-            }))}
-          />
+      const option: echarts.EChartsOption = {
+        title: title ? {
+          text: title,
+          left: "center"
+        } : undefined,
+        tooltip: {
+          trigger: "item",
+          formatter: ((params) => {
+            if (Array.isArray(params)) {
+              return "";
+            }
+            const value = typeof params.value === "number" ? params.value : 0;
+            return `${params.name}: ${formatCurrency(value)} (${params.percent}%)`;
+          }) as TooltipFormatterCallback<CallbackDataParams>
+        },
+        series: [
+          {
+            name: title || "",
+            type: "pie",
+            radius: ["40%", "70%"],
+            center: ["50%", "50%"],
+            data: data,
+            emphasis: {
+              itemStyle: {
+                shadowBlur: 10,
+                shadowOffsetX: 0,
+                shadowColor: "rgba(0, 0, 0, 0.5)"
+              }
+            }
+          }
+        ]
+      };
 
-          <Tooltip
-            formatter={(value: number, name: string) => [
-              formatCurrency(value),
-              name,
-            ]}
-            contentStyle={{
-              backgroundColor: "rgba(255, 255, 255, 0.9)",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              padding: "8px",
-              fontSize: "12px"
-            }}
-            labelStyle={{
-              color: "#666",
-              fontWeight: "bold",
-              fontSize: "12px"
-            }}
-          />
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
+      chart.setOption(option);
+    }
 
-export default PieChart3D; 
+    const handleResize = () => {
+      chart?.resize();
+    };
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      chart?.dispose();
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [data, title, formatCurrency]);
+
+  return <div ref={chartRef} style={{ width: "100%", height: "400px" }} />;
+} 

@@ -4,12 +4,13 @@ import DashboardLayout from "@/components/Dashboard/Layout";
 import TransactionList from "@/components/TransactionList";
 import { useTransactions } from "@/contexts/TransactionContext";
 import { supabase } from "@/lib/supabase";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/hooks/useCurrency";
 import PieChart3D from "@/components/PieChart3D";
 
 const Reports = () => {
   const navigate = useNavigate();
   const { transactions, isLoading, error, totalIncome, totalExpenses, retryConnection } = useTransactions();
+  const { formatCurrency } = useCurrency();
 
   useEffect(() => {
     checkUser();

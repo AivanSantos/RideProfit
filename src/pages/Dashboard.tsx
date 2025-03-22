@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Wallet, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/hooks/useCurrency";
 
 interface NewTransaction {
   type: "expense" | "income";
@@ -29,6 +29,7 @@ const Dashboard = () => {
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
   const isMobile = useIsMobile();
+  const { formatCurrency } = useCurrency();
 
   useEffect(() => {
     checkUser();

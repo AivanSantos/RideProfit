@@ -30,10 +30,11 @@ import {
   Download,
   Share2
 } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/hooks/useCurrency";
 
 const Expenses = () => {
   const { user } = useAuth();
+  const { formatCurrency } = useCurrency();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({

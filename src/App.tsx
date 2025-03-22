@@ -27,22 +27,11 @@ import Family from "./pages/Family";
 import Navbar from "./components/Navbar";
 import Transactions from "./pages/Transactions";
 import Notifications from "./pages/Notifications";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { SettingsProvider } from "@/contexts/SettingsContext";
+import PrivateRoute from "@/components/PrivateRoute";
 
 const queryClient = new QueryClient();
-
-const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return <div>Carregando...</div>;
-  }
-
-  if (!user) {
-    return <Navigate to="/login" />;
-  }
-
-  return <>{children}</>;
-};
 
 const App = () => {
   const { user } = useAuth();
@@ -50,48 +39,108 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <TransactionProvider>
-          <ShoppingListProvider>
-            <Toaster />
-            <Sonner />
-            <Router>
-              <div className="min-h-screen flex flex-col">
-                <Navbar />
-                <main className="flex-grow">
-                  <ScrollToTop />
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/terms" element={<Terms />} />
-                    <Route path="/privacy" element={<Privacy />} />
-                    <Route path="/cookies" element={<Cookies />} />
-                    <Route path="/gdpr" element={<GDPR />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
-                    <Route
-                      path="/dashboard"
-                      element={
-                        <PrivateRoute>
-                          <Dashboard />
-                        </PrivateRoute>
-                      }
-                    />
-                    <Route path="/expenses" element={<Expenses />} />
-                    <Route path="/income" element={<Income />} />
-                    <Route path="/shopping-list" element={<ShoppingList />} />
-                    <Route path="/reports" element={<Reports />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/family" element={<Family />} />
-                    <Route path="/transactions" element={<Transactions />} />
-                    <Route path="/notifications" element={<Notifications />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </main>
-              </div>
-            </Router>
-          </ShoppingListProvider>
-        </TransactionProvider>
+        <AuthProvider>
+          <TransactionProvider>
+            <ShoppingListProvider>
+              <Toaster />
+              <Sonner />
+              <Router>
+                <SettingsProvider>
+                  <div className="min-h-screen flex flex-col">
+                    <Navbar />
+                    <main className="flex-grow">
+                      <ScrollToTop />
+                      <Routes>
+                        <Route path="/" element={<Index />} />
+                        <Route path="/about" element={<About />} />
+                        <Route path="/terms" element={<Terms />} />
+                        <Route path="/privacy" element={<Privacy />} />
+                        <Route path="/cookies" element={<Cookies />} />
+                        <Route path="/gdpr" element={<GDPR />} />
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/register" element={<Register />} />
+                        <Route
+                          path="/dashboard"
+                          element={
+                            <PrivateRoute>
+                              <Dashboard />
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path="/expenses"
+                          element={
+                            <PrivateRoute>
+                              <Expenses />
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path="/income"
+                          element={
+                            <PrivateRoute>
+                              <Income />
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path="/shopping-list"
+                          element={
+                            <PrivateRoute>
+                              <ShoppingList />
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path="/reports"
+                          element={
+                            <PrivateRoute>
+                              <Reports />
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path="/notifications"
+                          element={
+                            <PrivateRoute>
+                              <Notifications />
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path="/transactions"
+                          element={
+                            <PrivateRoute>
+                              <Transactions />
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path="/profile"
+                          element={
+                            <PrivateRoute>
+                              <Profile />
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route
+                          path="/settings"
+                          element={
+                            <PrivateRoute>
+                              <Settings />
+                            </PrivateRoute>
+                          }
+                        />
+                        <Route path="/family" element={<Family />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </main>
+                  </div>
+                </SettingsProvider>
+              </Router>
+            </ShoppingListProvider>
+          </TransactionProvider>
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

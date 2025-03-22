@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { supabase } from '../lib/supabase';
 import { toast } from "sonner";
 import { Transaction } from "@/lib/supabase-operations";
+import { useAuth } from './AuthContext';
 
 interface TransactionContextType {
   transactions: Transaction[];
@@ -24,10 +25,10 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 3;
+  const { user, loading: authLoading } = useAuth();
 
   const fetchTransactions = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error("Usuário não autenticado");
       }
@@ -68,12 +69,13 @@ export function TransactionProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    fetchTransactions();
-  }, [retryCount]);
+    if (!authLoading && user) {
+      fetchTransactions();
+    }
+  }, [user, authLoading, retryCount]);
 
   const addTransaction = async (transaction: Omit<Transaction, "id" | "user_id">) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error("Usuário não autenticado");
       }

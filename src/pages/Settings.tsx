@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import DashboardLayout from "@/components/Dashboard/Layout";
 import { 
   Card, 
@@ -8,94 +8,34 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { 
-  Settings as SettingsIcon, 
   Bell, 
   Lock, 
   Globe, 
-  Save,
-  BellRing,
-  BellOff
+  Save
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { Switch } from "@/components/ui/switch";
+import { useSettings } from "@/contexts/SettingsContext";
 
 const Settings = () => {
   const navigate = useNavigate();
-  const [settings, setSettings] = useState({
-    notifications: true,
-    currency: "BRL",
-    timezone: "America/Sao_Paulo"
-  });
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  const fetchSettings = async () => {
-    try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError) throw userError;
-      if (!user) {
-        navigate('/login');
-        return;
-      }
-
-      // Buscar configurações do usuário
-      const { data: userSettings, error: settingsError } = await supabase
-        .from('user_settings')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (settingsError && settingsError.code !== 'PGRST116') {
-        throw settingsError;
-      }
-
-      if (userSettings) {
-        setSettings({
-          notifications: userSettings.notifications,
-          currency: userSettings.currency,
-          timezone: userSettings.timezone
-        });
-      } else {
-        // Criar configurações padrão se não existirem
-        const { error: insertError } = await supabase
-          .from('user_settings')
-          .insert([{
-            user_id: user.id,
-            notifications: true,
-            currency: "BRL",
-            timezone: "America/Sao_Paulo"
-          }]);
-
-        if (insertError) throw insertError;
-      }
-    } catch (error) {
-      console.error('Erro ao carregar configurações:', error);
-      toast.error('Erro ao carregar configurações. Por favor, tente novamente.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { settings, updateSettings, isLoading } = useSettings();
+  const [localSettings, setLocalSettings] = useState(settings);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setSettings(prev => ({
+    setLocalSettings(prev => ({
       ...prev,
       [name]: value
     }));
   };
 
   const handleToggle = (name: string) => {
-    setSettings(prev => ({
+    setLocalSettings(prev => ({
       ...prev,
       [name]: !prev[name as keyof typeof prev]
     }));
@@ -103,19 +43,7 @@ const Settings = () => {
 
   const handleSaveSettings = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
-
-      const { error } = await supabase
-        .from('user_settings')
-        .upsert({
-          user_id: user.id,
-          notifications: settings.notifications,
-          currency: settings.currency,
-          timezone: settings.timezone
-        });
-
-      if (error) throw error;
+      await updateSettings(localSettings);
       toast.success("Configurações atualizadas com sucesso!");
     } catch (error) {
       console.error('Erro ao salvar configurações:', error);
@@ -170,7 +98,7 @@ const Settings = () => {
                       </p>
                     </div>
                     <Switch
-                      checked={settings.notifications}
+                      checked={localSettings.notifications}
                       onCheckedChange={() => handleToggle('notifications')}
                     />
                   </div>
@@ -184,7 +112,7 @@ const Settings = () => {
                     <select
                       id="currency"
                       name="currency"
-                      value={settings.currency}
+                      value={localSettings.currency}
                       onChange={handleChange}
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
@@ -198,7 +126,7 @@ const Settings = () => {
                     <select
                       id="timezone"
                       name="timezone"
-                      value={settings.timezone}
+                      value={localSettings.timezone}
                       onChange={handleChange}
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >

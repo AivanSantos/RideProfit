@@ -30,10 +30,11 @@ import {
   Download,
   TrendingUp
 } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/hooks/useCurrency";
 
 const Income = () => {
   const { user } = useAuth();
+  const { formatCurrency } = useCurrency();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
