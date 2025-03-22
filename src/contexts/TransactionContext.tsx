@@ -31,7 +31,36 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchTransactions();
+    const checkUserAndFetch = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setError('Usuário não autenticado');
+          setLoading(false);
+          return;
+        }
+        await fetchTransactions();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erro ao verificar usuário');
+        setLoading(false);
+      }
+    };
+
+    checkUserAndFetch();
+
+    // Inscrever-se para mudanças na autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        fetchTransactions();
+      } else {
+        setTransactions([]);
+        setError('Usuário não autenticado');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchTransactions = async () => {
