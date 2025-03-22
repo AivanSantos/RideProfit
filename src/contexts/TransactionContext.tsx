@@ -1,66 +1,67 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { toast } from "sonner";
-
-interface Transaction {
-  id: string;
-  user_id: string;
-  type: 'income' | 'expense';
-  amount: number;
-  description: string;
-  category: string;
-  date: string;
-  created_at: string;
-}
-
-interface NewTransaction {
-  type: 'income' | 'expense';
-  amount: number;
-  description: string;
-  category: string;
-  date: string;
-}
+import { Transaction } from "@/lib/supabase-operations";
 
 interface TransactionContextType {
   transactions: Transaction[];
   isLoading: boolean;
   error: Error | null;
-  addTransaction: (transaction: NewTransaction) => Promise<void>;
-  updateTransaction: (id: string, transaction: NewTransaction) => Promise<void>;
-  deleteTransaction: (id: string) => Promise<void>;
   totalIncome: number;
   totalExpenses: number;
   balance: number;
+  addTransaction: (transaction: Omit<Transaction, "id" | "user_id">) => Promise<void>;
+  updateTransaction: (id: string, transaction: Partial<Transaction>) => Promise<void>;
+  deleteTransaction: (id: string) => Promise<void>;
+  retryConnection: () => Promise<void>;
 }
 
 const TransactionContext = createContext<TransactionContextType | undefined>(undefined);
 
-export const TransactionProvider = ({ children }: { children: ReactNode }) => {
+export function TransactionProvider({ children }: { children: ReactNode }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
 
   const fetchTransactions = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
+      if (!user) {
+        throw new Error("Usuário não autenticado");
+      }
 
+      console.log("Buscando transações para o usuário:", user.id);
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
+        .eq("user_id", user.id)
         .order("date", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
-      const parsedData = data.map(transaction => ({
-        ...transaction,
-        amount: Number(transaction.amount)
-      }));
-
-      setTransactions(parsedData);
+      console.log("Transações encontradas:", data?.length || 0);
+      setTransactions(data || []);
+      setError(null);
     } catch (err) {
-      setError(err as Error);
-      toast.error("Erro ao carregar transações");
+      console.error("Erro ao buscar transações:", err);
+      setError(err instanceof Error ? err : new Error("Erro ao buscar transações"));
+      
+      // Tentar reconectar se houver erro de rede
+      if (err instanceof Error && 
+          (err.message.includes("Failed to fetch") || 
+           err.message.includes("ERR_INTERNET_DISCONNECTED") ||
+           err.message.includes("ERR_NAME_NOT_RESOLVED"))) {
+        if (retryCount < MAX_RETRIES) {
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+            fetchTransactions();
+          }, 2000 * (retryCount + 1)); // Espera progressiva: 2s, 4s, 6s
+        }
+      }
     } finally {
       setIsLoading(false);
     }
@@ -68,63 +69,50 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     fetchTransactions();
-  }, []);
+  }, [retryCount]);
 
-  const addTransaction = async (transaction: NewTransaction) => {
+  const addTransaction = async (transaction: Omit<Transaction, "id" | "user_id">) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const newTransaction = {
-        ...transaction,
-        amount: Number(transaction.amount),
-        user_id: user.id
-      };
+      if (!user) {
+        throw new Error("Usuário não autenticado");
+      }
 
       const { data, error } = await supabase
         .from("transactions")
-        .insert([newTransaction])
+        .insert([{ ...transaction, user_id: user.id }])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
-      setTransactions(prev => [{
-        ...data,
-        amount: Number(data.amount)
-      }, ...prev]);
+      setTransactions((prev) => [data, ...prev]);
     } catch (err) {
+      console.error("Erro ao adicionar transação:", err);
       throw err;
     }
   };
 
-  const updateTransaction = async (id: string, transaction: NewTransaction) => {
+  const updateTransaction = async (id: string, transaction: Partial<Transaction>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const updatedTransaction = {
-        ...transaction,
-        amount: Number(transaction.amount),
-        user_id: user.id
-      };
-
       const { data, error } = await supabase
         .from("transactions")
-        .update(updatedTransaction)
+        .update(transaction)
         .eq("id", id)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
-      setTransactions(prev => 
-        prev.map(t => t.id === id ? {
-          ...data,
-          amount: Number(data.amount)
-        } : t)
+      setTransactions((prev) =>
+        prev.map((t) => (t.id === id ? data : t))
       );
     } catch (err) {
+      console.error("Erro ao atualizar transação:", err);
       throw err;
     }
   };
@@ -136,21 +124,30 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
         .delete()
         .eq("id", id);
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
 
-      setTransactions(prev => prev.filter(t => t.id !== id));
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
     } catch (err) {
+      console.error("Erro ao deletar transação:", err);
       throw err;
     }
   };
 
+  const retryConnection = async () => {
+    setRetryCount(0);
+    setIsLoading(true);
+    await fetchTransactions();
+  };
+
   const totalIncome = transactions
-    .filter(t => t.type === "income")
-    .reduce((acc, curr) => acc + Number(curr.amount), 0);
+    .filter((t) => t.type === "income")
+    .reduce((sum, curr) => sum + Number(curr.amount), 0);
 
   const totalExpenses = transactions
-    .filter(t => t.type === "expense")
-    .reduce((acc, curr) => acc + Number(curr.amount), 0);
+    .filter((t) => t.type === "expense")
+    .reduce((sum, curr) => sum + Number(curr.amount), 0);
 
   const balance = totalIncome - totalExpenses;
 
@@ -160,23 +157,24 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
         transactions,
         isLoading,
         error,
-        addTransaction,
-        updateTransaction,
-        deleteTransaction,
         totalIncome,
         totalExpenses,
         balance,
+        addTransaction,
+        updateTransaction,
+        deleteTransaction,
+        retryConnection
       }}
     >
       {children}
     </TransactionContext.Provider>
   );
-};
+}
 
-export const useTransactions = () => {
+export function useTransactions() {
   const context = useContext(TransactionContext);
   if (context === undefined) {
-    throw new Error("useTransactions must be used within a TransactionProvider");
+    throw new Error("useTransactions deve ser usado dentro de um TransactionProvider");
   }
   return context;
-}; 
+} 

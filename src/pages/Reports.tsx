@@ -9,7 +9,7 @@ import PieChart3D from "@/components/PieChart3D";
 
 const Reports = () => {
   const navigate = useNavigate();
-  const { transactions, isLoading, error, totalIncome, totalExpenses } = useTransactions();
+  const { transactions, isLoading, error, totalIncome, totalExpenses, retryConnection } = useTransactions();
 
   useEffect(() => {
     checkUser();
@@ -99,7 +99,20 @@ const Reports = () => {
       <DashboardLayout>
         <div className="flex items-center justify-center h-screen">
           <div className="text-center">
-            <p className="text-red-600">Erro ao carregar dados: {error instanceof Error ? error.message : String(error)}</p>
+            <p className="text-red-600 mb-4">
+              Erro ao carregar dados: {error instanceof Error ? error.message : String(error)}
+            </p>
+            {(error instanceof Error && 
+              (error.message.includes("Failed to fetch") || 
+               error.message.includes("ERR_INTERNET_DISCONNECTED") ||
+               error.message.includes("ERR_NAME_NOT_RESOLVED"))) && (
+              <button
+                onClick={() => retryConnection()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Tentar Reconectar
+              </button>
+            )}
           </div>
         </div>
       </DashboardLayout>
