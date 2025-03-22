@@ -65,7 +65,13 @@ const Settings = () => {
       }
 
       if (userSettings) {
-        setSettings(userSettings);
+        setSettings({
+          notifications: userSettings.notifications,
+          dark_mode: userSettings.dark_mode,
+          language: userSettings.language,
+          currency: userSettings.currency,
+          timezone: userSettings.timezone
+        });
       } else {
         // Criar configurações padrão se não existirem
         const { error: insertError } = await supabase
@@ -113,7 +119,11 @@ const Settings = () => {
         .from('user_settings')
         .upsert({
           user_id: user.id,
-          ...settings
+          notifications: settings.notifications,
+          dark_mode: settings.dark_mode,
+          language: settings.language,
+          currency: settings.currency,
+          timezone: settings.timezone
         });
 
       if (error) throw error;

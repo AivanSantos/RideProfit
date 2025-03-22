@@ -1,3 +1,11 @@
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view their own settings" ON user_settings;
+DROP POLICY IF EXISTS "Users can update their own settings" ON user_settings;
+DROP POLICY IF EXISTS "Users can insert their own settings" ON user_settings;
+
+-- Drop existing trigger if it exists
+DROP TRIGGER IF EXISTS handle_user_settings_updated_at ON user_settings;
+
 -- Create user_settings table
 CREATE TABLE IF NOT EXISTS user_settings (
   user_id UUID REFERENCES auth.users ON DELETE CASCADE,
