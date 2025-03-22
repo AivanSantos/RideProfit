@@ -52,7 +52,12 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
 
-      setTransactions(data);
+      const parsedData = data.map(transaction => ({
+        ...transaction,
+        amount: Number(transaction.amount)
+      }));
+
+      setTransactions(parsedData);
     } catch (err) {
       setError(err as Error);
       toast.error("Erro ao carregar transações");
@@ -70,15 +75,24 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
+      const newTransaction = {
+        ...transaction,
+        amount: Number(transaction.amount),
+        user_id: user.id
+      };
+
       const { data, error } = await supabase
         .from("transactions")
-        .insert([{ ...transaction, user_id: user.id }])
+        .insert([newTransaction])
         .select()
         .single();
 
       if (error) throw error;
 
-      setTransactions(prev => [data, ...prev]);
+      setTransactions(prev => [{
+        ...data,
+        amount: Number(data.amount)
+      }, ...prev]);
     } catch (err) {
       throw err;
     }
@@ -89,9 +103,15 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
+      const updatedTransaction = {
+        ...transaction,
+        amount: Number(transaction.amount),
+        user_id: user.id
+      };
+
       const { data, error } = await supabase
         .from("transactions")
-        .update({ ...transaction, user_id: user.id })
+        .update(updatedTransaction)
         .eq("id", id)
         .select()
         .single();
@@ -99,7 +119,10 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
 
       setTransactions(prev => 
-        prev.map(t => t.id === id ? data : t)
+        prev.map(t => t.id === id ? {
+          ...data,
+          amount: Number(data.amount)
+        } : t)
       );
     } catch (err) {
       throw err;
@@ -123,11 +146,11 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
 
   const totalIncome = transactions
     .filter(t => t.type === "income")
-    .reduce((acc, curr) => acc + curr.amount, 0);
+    .reduce((acc, curr) => acc + Number(curr.amount), 0);
 
   const totalExpenses = transactions
     .filter(t => t.type === "expense")
-    .reduce((acc, curr) => acc + curr.amount, 0);
+    .reduce((acc, curr) => acc + Number(curr.amount), 0);
 
   const balance = totalIncome - totalExpenses;
 
