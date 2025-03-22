@@ -4,22 +4,22 @@ import PieChart3D from "./PieChart3D";
 
 interface FinancialChartProps {
   transactions: Transaction[];
-  type: "income" | "expense";
+  type: "expense" | "income";
 }
 
 // Cores para cada categoria
 const categoryColors: Record<string, string> = {
   // Despesas
-  "alimentacao": "#FF6B6B", // Vermelho suave
-  "transporte": "#4ECDC4", // Verde água
-  "moradia": "#45B7D1", // Azul claro
-  "saude": "#96CEB4", // Verde menta
-  "educacao": "#FFEEAD", // Amarelo suave
+  "alimentação": "#FF6B6B", // Vermelho suave
+  "habitação": "#4ECDC4", // Verde água
+  "transporte": "#45B7D1", // Azul claro
+  "saúde": "#96CEB4", // Verde menta
+  "educação": "#FFEEAD", // Amarelo suave
   "lazer": "#D4A5A5", // Rosa suave
   "outros": "#9B9B9B", // Cinza
   
   // Receitas
-  "salario": "#4CAF50", // Verde
+  "salário": "#4CAF50", // Verde
   "investimentos": "#2196F3", // Azul
   "freelance": "#9C27B0", // Roxo
   "bonus": "#FF9800", // Laranja
@@ -41,9 +41,9 @@ const FinancialChart = ({ transactions, type }: FinancialChartProps) => {
     // Converter para o formato do gráfico
     return Array.from(categoryTotals.entries())
       .map(([category, value]) => ({
-        name: category.charAt(0).toUpperCase() + category.slice(1).replace("_", " "),
+        name: category,
         value,
-        color: categoryColors[category] || "#9B9B9B"
+        color: categoryColors[category.toLowerCase()] || "#9B9B9B"
       }))
       .sort((a, b) => b.value - a.value); // Ordenar por valor decrescente
   }, [transactions, type]);

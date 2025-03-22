@@ -13,6 +13,9 @@ interface PieChart3DProps {
 }
 
 const PieChart3D = ({ data, title }: PieChart3DProps) => {
+  // Criar array de cores para o Recharts
+  const COLORS = data.map(entry => entry.color);
+
   return (
     <div className="h-[400px] w-full">
       <h3 className="text-lg font-semibold mb-4">{title}</h3>
@@ -45,8 +48,8 @@ const PieChart3D = ({ data, title }: PieChart3DProps) => {
             {data.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
-                fill={entry.color}
-                stroke={entry.color}
+                fill={COLORS[index % COLORS.length]}
+                stroke={COLORS[index % COLORS.length]}
                 strokeWidth={1}
                 style={{ filter: "brightness(0.8)" }}
               />
@@ -70,8 +73,8 @@ const PieChart3D = ({ data, title }: PieChart3DProps) => {
             {data.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
-                fill={entry.color}
-                stroke={entry.color}
+                fill={COLORS[index % COLORS.length]}
+                stroke={COLORS[index % COLORS.length]}
                 strokeWidth={1}
               />
             ))}
@@ -93,7 +96,7 @@ const PieChart3D = ({ data, title }: PieChart3DProps) => {
             payload={data.map((entry, index) => ({
               value: entry.name,
               type: "circle",
-              color: entry.color,
+              color: COLORS[index % COLORS.length],
               id: `legend-${index}`
             }))}
           />
