@@ -27,7 +27,6 @@ import Family from "./pages/Family";
 import Navbar from "./components/Navbar";
 import Transactions from "./pages/Transactions";
 import Notifications from "./pages/Notifications";
-import { useNotifications } from "@/hooks/useNotifications";
 
 const queryClient = new QueryClient();
 
@@ -47,7 +46,6 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
 
 const App = () => {
   const { user } = useAuth();
-  useNotifications();
 
   return (
     <QueryClientProvider client={queryClient}>
