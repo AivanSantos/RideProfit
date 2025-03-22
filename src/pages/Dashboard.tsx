@@ -9,7 +9,7 @@ import AddTransactionModal from "@/components/AddTransactionModal";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTransactions } from "@/contexts/TransactionContext";
-import { toast } from 'sonner';
+import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 
 interface NewTransaction {
@@ -22,9 +22,25 @@ interface NewTransaction {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [showExpenseModal, setShowExpenseModal] = useState(false);
-  const [showIncomeModal, setShowIncomeModal] = useState(false);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    checkUser();
+  }, []);
+
+  const checkUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/login');
+      }
+    } catch (error) {
+      console.error('Erro ao verificar usuário:', error);
+      navigate('/login');
+    }
+  };
 
   const { 
     transactions, 
@@ -37,25 +53,14 @@ const Dashboard = () => {
     deleteTransaction
   } = useTransactions();
 
-  useEffect(() => {
-    if (error === 'Usuário não autenticado') {
-      navigate('/login');
-    }
-  }, [error, navigate]);
-
   const handleAddTransaction = async (newTransaction: NewTransaction) => {
     try {
       await addTransaction(newTransaction);
-      toast.success(
-        newTransaction.type === 'income' 
-          ? 'Receita adicionada com sucesso!'
-          : 'Despesa adicionada com sucesso!'
-      );
-      setShowIncomeModal(false);
-      setShowExpenseModal(false);
+      setIsExpenseModalOpen(false);
+      setIsIncomeModalOpen(false);
+      toast.success('Transação adicionada com sucesso!');
     } catch (error) {
       toast.error('Erro ao adicionar transação');
-      console.error('Erro ao adicionar transação:', error);
     }
   };
 
@@ -71,7 +76,7 @@ const Dashboard = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex items-center justify-center h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
             <p className="mt-4 text-gray-600">Carregando dashboard...</p>
@@ -81,15 +86,12 @@ const Dashboard = () => {
     );
   }
 
-  if (error && error !== 'Usuário não autenticado') {
+  if (error) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex items-center justify-center h-screen">
           <div className="text-center">
-            <p className="text-red-600 mb-4">Erro ao carregar dados: {error}</p>
-            <Button onClick={() => window.location.reload()}>
-              Tentar novamente
-            </Button>
+            <p className="text-red-600">Erro ao carregar dados: {error}</p>
           </div>
         </div>
       </DashboardLayout>
@@ -117,22 +119,22 @@ const Dashboard = () => {
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-3 my-4 md:my-6">
         <Button 
-          onClick={() => setShowIncomeModal(true)}
-          variant="outline"
-          className="hover-lift text-xs md:text-sm"
-          size={isMobile ? "sm" : "default"}
-        >
-          <PlusCircle className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-          Adicionar Receita
-        </Button>
-        <Button 
-          onClick={() => setShowExpenseModal(true)}
+          onClick={() => setIsExpenseModalOpen(true)}
           variant="outline"
           className="hover-lift text-xs md:text-sm"
           size={isMobile ? "sm" : "default"}
         >
           <PlusCircle className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
           Adicionar Despesa
+        </Button>
+        <Button 
+          onClick={() => setIsIncomeModalOpen(true)}
+          variant="outline"
+          className="hover-lift text-xs md:text-sm"
+          size={isMobile ? "sm" : "default"}
+        >
+          <PlusCircle className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+          Adicionar Receita
         </Button>
       </div>
 
@@ -161,7 +163,7 @@ const Dashboard = () => {
             <p className="text-gray-500 mb-4 text-sm md:text-base">Sem transações registadas. Adicione despesas ou receitas para ver aqui.</p>
             <div className="flex justify-center gap-3">
               <Button 
-                onClick={() => setShowExpenseModal(true)}
+                onClick={() => setIsExpenseModalOpen(true)}
                 variant="outline"
                 className="text-xs md:text-sm"
                 size={isMobile ? "sm" : "default"}
@@ -170,7 +172,7 @@ const Dashboard = () => {
                 Adicionar Despesa
               </Button>
               <Button 
-                onClick={() => setShowIncomeModal(true)}
+                onClick={() => setIsIncomeModalOpen(true)}
                 variant="outline"
                 className="text-xs md:text-sm"
                 size={isMobile ? "sm" : "default"}
@@ -185,15 +187,15 @@ const Dashboard = () => {
 
       {/* Modals */}
       <AddTransactionModal
-        isOpen={showExpenseModal}
-        onClose={() => setShowExpenseModal(false)}
+        isOpen={isExpenseModalOpen}
+        onClose={() => setIsExpenseModalOpen(false)}
         onAddTransaction={handleAddTransaction}
         type="expense"
       />
       
       <AddTransactionModal
-        isOpen={showIncomeModal}
-        onClose={() => setShowIncomeModal(false)}
+        isOpen={isIncomeModalOpen}
+        onClose={() => setIsIncomeModalOpen(false)}
         onAddTransaction={handleAddTransaction}
         type="income"
       />
