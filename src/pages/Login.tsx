@@ -94,6 +94,7 @@ const Login = () => {
                   onChange={handleChange}
                   placeholder="seu@email.com"
                   className="w-full"
+                  autoComplete="username"
                 />
               </div>
               <div className="space-y-2">
@@ -109,6 +110,7 @@ const Login = () => {
                     onChange={handleChange}
                     placeholder="••••••••"
                     className="w-full"
+                    autoComplete="current-password"
                   />
                 </div>
               </div>

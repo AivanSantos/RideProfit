@@ -163,6 +163,7 @@ const Register = () => {
                       value={email}
                       onChange={handleChange}
                       placeholder="seu@email.com"
+                      autoComplete="username"
                     />
                   </div>
                   <div className="space-y-2">
@@ -175,6 +176,7 @@ const Register = () => {
                       value={password}
                       onChange={handleChange}
                       placeholder="••••••••"
+                      autoComplete="new-password"
                     />
                   </div>
                   <div className="space-y-2">
@@ -187,6 +189,7 @@ const Register = () => {
                       value={confirmPassword}
                       onChange={handleChange}
                       placeholder="••••••••"
+                      autoComplete="new-password"
                     />
                   </div>
                   <Button 
