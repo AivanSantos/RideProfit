@@ -24,10 +24,19 @@ const formatCurrency = (value: number) => {
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
-  return new Intl.DateTimeFormat('pt-BR', {
+  return date.toLocaleDateString('pt-BR', {
     month: 'short',
     year: 'numeric'
-  }).format(date);
+  }).replace('.', '');
+};
+
+const parseDate = (dateString: string) => {
+  const [month, year] = dateString.split(' ');
+  const monthMap: { [key: string]: number } = {
+    'jan': 0, 'fev': 1, 'mar': 2, 'abr': 3, 'mai': 4, 'jun': 5,
+    'jul': 6, 'ago': 7, 'set': 8, 'out': 9, 'nov': 10, 'dez': 11
+  };
+  return new Date(parseInt(year), monthMap[month.toLowerCase()]);
 };
 
 export default function FinancialChart({ transactions = [], type }: FinancialChartProps) {
@@ -36,10 +45,8 @@ export default function FinancialChart({ transactions = [], type }: FinancialCha
       return [];
     }
 
-    // Filtrar por tipo e ordenar por data
-    const filteredTransactions = transactions
-      .filter(t => t.type === type)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    // Filtrar por tipo
+    const filteredTransactions = transactions.filter(t => t.type === type);
 
     // Agrupar por mês/ano
     const groupedData = filteredTransactions.reduce((acc, transaction) => {
@@ -52,16 +59,16 @@ export default function FinancialChart({ transactions = [], type }: FinancialCha
     }, {} as Record<string, number>);
 
     // Converter para array e ordenar por data
-    return Object.entries(groupedData)
+    const sortedData = Object.entries(groupedData)
       .map(([date, amount]) => ({
         date,
         amount,
+        timestamp: parseDate(date).getTime()
       }))
-      .sort((a, b) => {
-        const dateA = new Date(a.date);
-        const dateB = new Date(b.date);
-        return dateA.getTime() - dateB.getTime();
-      });
+      .sort((a, b) => a.timestamp - b.timestamp)
+      .map(({ date, amount }) => ({ date, amount }));
+
+    return sortedData;
   }, [transactions, type]);
 
   if (!transactions || transactions.length === 0) {
@@ -80,11 +87,12 @@ export default function FinancialChart({ transactions = [], type }: FinancialCha
         {type === "income" ? "Receitas" : "Despesas"} por Mês
       </h3>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData}>
+        <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis 
             dataKey="date"
             tick={{ fontSize: 12 }}
+            interval="preserveStartEnd"
           />
           <YAxis 
             tick={{ fontSize: 12 }}
