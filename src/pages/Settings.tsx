@@ -16,11 +16,8 @@ import {
   Settings as SettingsIcon, 
   Bell, 
   Lock, 
-  Palette, 
   Globe, 
   Save,
-  Moon,
-  Sun,
   BellRing,
   BellOff
 } from "lucide-react";
@@ -32,10 +29,8 @@ const Settings = () => {
   const navigate = useNavigate();
   const [settings, setSettings] = useState({
     notifications: true,
-    dark_mode: false,
-    language: "pt",
-    currency: "EUR",
-    timezone: "Europe/Lisbon"
+    currency: "BRL",
+    timezone: "America/Sao_Paulo"
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -67,8 +62,6 @@ const Settings = () => {
       if (userSettings) {
         setSettings({
           notifications: userSettings.notifications,
-          dark_mode: userSettings.dark_mode,
-          language: userSettings.language,
           currency: userSettings.currency,
           timezone: userSettings.timezone
         });
@@ -79,10 +72,8 @@ const Settings = () => {
           .insert([{
             user_id: user.id,
             notifications: true,
-            dark_mode: false,
-            language: "pt",
-            currency: "EUR",
-            timezone: "Europe/Lisbon"
+            currency: "BRL",
+            timezone: "America/Sao_Paulo"
           }]);
 
         if (insertError) throw insertError;
@@ -120,8 +111,6 @@ const Settings = () => {
         .upsert({
           user_id: user.id,
           notifications: settings.notifications,
-          dark_mode: settings.dark_mode,
-          language: settings.language,
           currency: settings.currency,
           timezone: settings.timezone
         });
@@ -161,10 +150,6 @@ const Settings = () => {
                   <Bell className="h-4 w-4" />
                   Notificações
                 </TabsTrigger>
-                <TabsTrigger value="appearance" className="flex items-center gap-2">
-                  <Palette className="h-4 w-4" />
-                  Aparência
-                </TabsTrigger>
                 <TabsTrigger value="preferences" className="flex items-center gap-2">
                   <Globe className="h-4 w-4" />
                   Preferências
@@ -192,39 +177,8 @@ const Settings = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="appearance" className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Modo Escuro</Label>
-                      <p className="text-sm text-gray-500">
-                        Alternar entre tema claro e escuro
-                      </p>
-                    </div>
-                    <Switch
-                      checked={settings.dark_mode}
-                      onCheckedChange={() => handleToggle('dark_mode')}
-                    />
-                  </div>
-                </div>
-              </TabsContent>
-
               <TabsContent value="preferences" className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="language">Idioma</Label>
-                    <select
-                      id="language"
-                      name="language"
-                      value={settings.language}
-                      onChange={handleChange}
-                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    >
-                      <option value="pt">Português</option>
-                      <option value="en">English</option>
-                      <option value="es">Español</option>
-                    </select>
-                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="currency">Moeda</Label>
                     <select
@@ -234,12 +188,12 @@ const Settings = () => {
                       onChange={handleChange}
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
-                      <option value="EUR">EUR (€)</option>
-                      <option value="USD">USD ($)</option>
-                      <option value="GBP">GBP (£)</option>
+                      <option value="BRL">Real (R$)</option>
+                      <option value="EUR">Euro (€)</option>
+                      <option value="USD">Dólar ($)</option>
                     </select>
                   </div>
-                  <div className="space-y-2 md:col-span-2">
+                  <div className="space-y-2">
                     <Label htmlFor="timezone">Fuso Horário</Label>
                     <select
                       id="timezone"
@@ -251,7 +205,6 @@ const Settings = () => {
                       <option value="America/Sao_Paulo">Brasil (GMT-3)</option>
                       <option value="Europe/Lisbon">Lisboa (GMT+0)</option>
                       <option value="America/New_York">Nova York (GMT-4)</option>
-                      <option value="Asia/Tokyo">Tóquio (GMT+9)</option>
                     </select>
                   </div>
                 </div>
