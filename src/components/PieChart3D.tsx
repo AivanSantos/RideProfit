@@ -48,6 +48,7 @@ const PieChart3D = ({ data, title }: PieChart3DProps) => {
                 fill={entry.color}
                 stroke={entry.color}
                 strokeWidth={1}
+                style={{ filter: "brightness(0.8)" }}
               />
             ))}
           </Pie>
