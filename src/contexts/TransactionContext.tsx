@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
+import { toast } from "sonner";
 
 interface Transaction {
   id: string;
@@ -12,150 +13,138 @@ interface Transaction {
   created_at: string;
 }
 
+interface NewTransaction {
+  type: 'income' | 'expense';
+  amount: number;
+  description: string;
+  category: string;
+  date: string;
+}
+
 interface TransactionContextType {
   transactions: Transaction[];
-  addTransaction: (transaction: Omit<Transaction, 'id' | 'user_id' | 'created_at'>) => Promise<void>;
+  isLoading: boolean;
+  error: Error | null;
+  addTransaction: (transaction: NewTransaction) => Promise<void>;
+  updateTransaction: (id: string, transaction: NewTransaction) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
-  loading: boolean;
-  error: string | null;
   totalIncome: number;
-  totalExpense: number;
+  totalExpenses: number;
   balance: number;
 }
 
 const TransactionContext = createContext<TransactionContextType | undefined>(undefined);
 
-export function TransactionProvider({ children }: { children: React.ReactNode }) {
+export const TransactionProvider = ({ children }: { children: ReactNode }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const checkUserAndFetch = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          setError('Usuário não autenticado');
-          setLoading(false);
-          return;
-        }
-        await fetchTransactions();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erro ao verificar usuário');
-        setLoading(false);
-      }
-    };
-
-    checkUserAndFetch();
-
-    // Inscrever-se para mudanças na autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        fetchTransactions();
-      } else {
-        setTransactions([]);
-        setError('Usuário não autenticado');
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   const fetchTransactions = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
-
       const { data, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false });
+        .from("transactions")
+        .select("*")
+        .order("date", { ascending: false });
 
       if (error) throw error;
-      setTransactions(data || []);
+
+      setTransactions(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao carregar transações');
+      setError(err as Error);
+      toast.error("Erro ao carregar transações");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const addTransaction = async (transaction: Omit<Transaction, 'id' | 'user_id' | 'created_at'>) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
 
+  const addTransaction = async (transaction: NewTransaction) => {
+    try {
       const { data, error } = await supabase
-        .from('transactions')
-        .insert([{
-          ...transaction,
-          user_id: user.id,
-        }])
-        .select('*')
+        .from("transactions")
+        .insert([transaction])
+        .select()
         .single();
 
       if (error) throw error;
-      if (!data) throw new Error('Nenhum dado retornado após inserção');
 
       setTransactions(prev => [data, ...prev]);
-      return data;
-    } catch (error) {
-      console.error('Erro ao adicionar transação:', error);
-      throw error;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const updateTransaction = async (id: string, transaction: NewTransaction) => {
+    try {
+      const { data, error } = await supabase
+        .from("transactions")
+        .update(transaction)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setTransactions(prev => 
+        prev.map(t => t.id === id ? data : t)
+      );
+    } catch (err) {
+      throw err;
     }
   };
 
   const deleteTransaction = async (id: string) => {
     try {
       const { error } = await supabase
-        .from('transactions')
+        .from("transactions")
         .delete()
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
 
       setTransactions(prev => prev.filter(t => t.id !== id));
-    } catch (error) {
-      console.error('Erro ao excluir transação:', error);
-      throw error;
+    } catch (err) {
+      throw err;
     }
   };
 
   const totalIncome = transactions
-    .filter(t => t.type === 'income')
+    .filter(t => t.type === "income")
     .reduce((acc, curr) => acc + curr.amount, 0);
 
-  const totalExpense = transactions
-    .filter(t => t.type === 'expense')
+  const totalExpenses = transactions
+    .filter(t => t.type === "expense")
     .reduce((acc, curr) => acc + curr.amount, 0);
 
-  const balance = totalIncome - totalExpense;
+  const balance = totalIncome - totalExpenses;
 
   return (
     <TransactionContext.Provider
       value={{
         transactions,
-        addTransaction,
-        deleteTransaction,
-        loading,
+        isLoading,
         error,
+        addTransaction,
+        updateTransaction,
+        deleteTransaction,
         totalIncome,
-        totalExpense,
+        totalExpenses,
         balance,
       }}
     >
       {children}
     </TransactionContext.Provider>
   );
-}
+};
 
-export function useTransactions() {
+export const useTransactions = () => {
   const context = useContext(TransactionContext);
   if (context === undefined) {
-    throw new Error('useTransactions deve ser usado dentro de um TransactionProvider');
+    throw new Error("useTransactions must be used within a TransactionProvider");
   }
   return context;
-} 
+}; 

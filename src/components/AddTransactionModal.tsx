@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -18,8 +18,10 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useTransactions } from "@/contexts/TransactionContext";
 
-interface NewTransaction {
+interface Transaction {
+  id: string;
   type: "expense" | "income";
   amount: number;
   description: string;
@@ -30,21 +32,32 @@ interface NewTransaction {
 interface AddTransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddTransaction: (transaction: NewTransaction) => void;
   type: "expense" | "income";
+  editingTransaction?: Transaction;
 }
 
 const AddTransactionModal = ({
   isOpen,
   onClose,
-  onAddTransaction,
   type,
+  editingTransaction
 }: AddTransactionModalProps) => {
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { addTransaction, updateTransaction } = useTransactions();
+
+  useEffect(() => {
+    if (editingTransaction) {
+      setDescription(editingTransaction.description);
+      setAmount(editingTransaction.amount.toString());
+      setCategory(editingTransaction.category);
+      setDate(editingTransaction.date);
+    }
+  }, [editingTransaction]);
 
   const expenseCategories = [
     "Alimentação",
@@ -66,7 +79,7 @@ const AddTransactionModal = ({
 
   const categories = type === "expense" ? expenseCategories : incomeCategories;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!description || !amount || !category || !date) {
@@ -82,16 +95,21 @@ const AddTransactionModal = ({
     setIsSubmitting(true);
     
     try {
-      const newTransaction: NewTransaction = {
+      const transactionData = {
         type,
         description: description.trim(),
         amount: Number(amount),
         category: category.trim(),
         date,
       };
-      
-      onAddTransaction(newTransaction);
-      toast.success(`${type === "expense" ? "Despesa" : "Receita"} adicionada com sucesso!`);
+
+      if (editingTransaction) {
+        await updateTransaction(editingTransaction.id, transactionData);
+        toast.success("Transação atualizada com sucesso!");
+      } else {
+        await addTransaction(transactionData);
+        toast.success(`${type === "expense" ? "Despesa" : "Receita"} adicionada com sucesso!`);
+      }
       
       // Reset form
       setDescription("");
@@ -101,7 +119,7 @@ const AddTransactionModal = ({
       
       onClose();
     } catch (error) {
-      toast.error("Erro ao adicionar transação.");
+      toast.error(editingTransaction ? "Erro ao atualizar transação." : "Erro ao adicionar transação.");
       console.error(error);
     } finally {
       setIsSubmitting(false);
@@ -113,10 +131,13 @@ const AddTransactionModal = ({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            Adicionar {type === "expense" ? "Despesa" : "Receita"}
+            {editingTransaction ? "Editar" : "Adicionar"} {type === "expense" ? "Despesa" : "Receita"}
           </DialogTitle>
           <DialogDescription>
-            Preencha os detalhes para adicionar uma nova {type === "expense" ? "despesa" : "receita"}.
+            {editingTransaction 
+              ? `Atualize os detalhes da ${type === "expense" ? "despesa" : "receita"}.`
+              : `Preencha os detalhes para adicionar uma nova ${type === "expense" ? "despesa" : "receita"}.`
+            }
           </DialogDescription>
         </DialogHeader>
         
@@ -133,7 +154,7 @@ const AddTransactionModal = ({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="amount">Valor (€)</Label>
+            <Label htmlFor="amount">Valor (R$)</Label>
             <Input
               id="amount"
               type="number"
@@ -191,7 +212,10 @@ const AddTransactionModal = ({
               disabled={isSubmitting}
               className={type === "expense" ? "bg-red-600 hover:bg-red-700" : ""}
             >
-              {isSubmitting ? "A adicionar..." : "Adicionar"}
+              {isSubmitting 
+                ? editingTransaction ? "Atualizando..." : "Adicionando..." 
+                : editingTransaction ? "Atualizar" : "Adicionar"
+              }
             </Button>
           </DialogFooter>
         </form>
