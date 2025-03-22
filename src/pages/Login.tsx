@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { EyeIcon, EyeOffIcon, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { AuthError } from '@supabase/supabase-js';
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
@@ -20,14 +21,26 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    
+    if (!formData.email || !formData.password) {
+      toast.error("Por favor, preencha todos os campos");
+      return;
+    }
 
     try {
+      setLoading(true);
       await signIn(formData.email, formData.password);
       toast.success("Login realizado com sucesso!");
       navigate("/dashboard");
-    } catch (error) {
-      toast.error("Email ou senha incorretos");
+    } catch (error: AuthError | any) {
+      console.error('Erro no login:', error);
+      if (error?.message?.includes('Invalid login credentials')) {
+        toast.error("Email ou senha incorretos");
+      } else if (error?.message?.includes('Email not confirmed')) {
+        toast.error("Por favor, confirme seu email antes de fazer login");
+      } else {
+        toast.error("Erro ao fazer login. Por favor, tente novamente.");
+      }
     } finally {
       setLoading(false);
     }
@@ -53,7 +66,7 @@ const Login = () => {
       </div>
       
       <div className="w-full max-w-md">
-        <Card className="w-full shadow-xl animate-fadeIn">
+        <Card className="w-full shadow-xl">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
               <img 
@@ -76,29 +89,42 @@ const Login = () => {
                   name="email"
                   type="email"
                   required
+                  disabled={loading}
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="seu@email.com"
+                  className="w-full"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Senha</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="••••••••"
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
+                    disabled={loading}
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="••••••••"
+                    className="w-full"
+                  />
+                </div>
               </div>
               <Button
                 type="submit"
                 className="w-full"
                 disabled={loading}
               >
-                {loading ? "Entrando..." : "Entrar"}
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Entrando...
+                  </div>
+                ) : (
+                  "Entrar"
+                )}
               </Button>
             </form>
           </CardContent>
