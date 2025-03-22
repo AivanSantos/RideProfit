@@ -56,15 +56,23 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
 
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'user_id' | 'created_at'>) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
       const { data, error } = await supabase
         .from('transactions')
-        .insert([transaction])
-        .select()
+        .insert([{
+          ...transaction,
+          user_id: user.id,
+        }])
+        .select('*')
         .single();
 
       if (error) throw error;
+      if (!data) throw new Error('Nenhum dado retornado após inserção');
 
-      setTransactions(prev => [...prev, data]);
+      setTransactions(prev => [data, ...prev]);
+      return data;
     } catch (error) {
       console.error('Erro ao adicionar transação:', error);
       throw error;

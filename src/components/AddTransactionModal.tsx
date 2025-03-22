@@ -19,10 +19,18 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 
+interface NewTransaction {
+  type: "expense" | "income";
+  amount: number;
+  description: string;
+  category: string;
+  date: string;
+}
+
 interface AddTransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddTransaction: (transaction: any) => void;
+  onAddTransaction: (transaction: NewTransaction) => void;
   type: "expense" | "income";
 }
 
@@ -74,12 +82,12 @@ const AddTransactionModal = ({
     setIsSubmitting(true);
     
     try {
-      const newTransaction = {
-        description,
-        amount: Number(amount),
-        category,
-        date,
+      const newTransaction: NewTransaction = {
         type,
+        description: description.trim(),
+        amount: Number(amount),
+        category: category.trim(),
+        date,
       };
       
       onAddTransaction(newTransaction);
@@ -150,7 +158,7 @@ const AddTransactionModal = ({
               </SelectTrigger>
               <SelectContent>
                 {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat.toLowerCase()}>
+                  <SelectItem key={cat} value={cat}>
                     {cat}
                   </SelectItem>
                 ))}
