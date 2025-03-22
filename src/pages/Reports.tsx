@@ -1,105 +1,81 @@
-import { useState } from "react";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/Dashboard/Layout";
-import FinancialChart from "@/components/FinancialChart";
-import { Button } from "@/components/ui/button";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { 
-  BarChart3, 
-  LineChart, 
-  Download, 
-  Share2,
-  FileText,
-  PieChart,
-  Calendar,
-  Users,
-  ArrowUpCircle,
-  ArrowDownCircle
-} from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
+import TransactionList from "@/components/TransactionList";
 import { useTransactions } from "@/contexts/TransactionContext";
+import { supabase } from "@/lib/supabase";
+import { formatCurrency } from "@/lib/utils";
+import PieChart3D from "@/components/PieChart3D";
 
 const Reports = () => {
-  const [selectedPeriod, setSelectedPeriod] = useState("month");
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1 + "");
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear() + "");
-  const isMobile = useIsMobile();
-  
-  const { 
-    transactions, 
-    isLoading, 
-    error,
-    totalIncome,
-    totalExpenses,
-    balance
-  } = useTransactions();
+  const navigate = useNavigate();
+  const { transactions, isLoading, error, totalIncome, totalExpenses } = useTransactions();
 
-  // Calcular taxa de economia
-  const savingsRate = totalIncome > 0 ? Math.round((balance / totalIncome) * 100 * 10) / 10 : 0;
+  useEffect(() => {
+    checkUser();
+  }, []);
 
-  // Calcular categorias de despesas
-  const calculateExpenseCategories = () => {
-    const expenseTransactions = transactions.filter(t => t.type === "expense");
-    const categoryTotals: Record<string, number> = {};
-    const total = expenseTransactions.reduce((sum, t) => sum + t.amount, 0);
-
-    expenseTransactions.forEach(t => {
-      categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
-    });
-
-    const colors = ["#0ea5e9", "#f97316", "#8b5cf6", "#22c55e", "#ef4444"];
-    return Object.entries(categoryTotals)
-      .map(([name, value], index) => ({
-        name,
-        value: total > 0 ? Math.round((value / total) * 100) : 0,
-        amount: value,
-        color: colors[index % colors.length],
-      }))
-      .sort((a, b) => b.amount - a.amount);
+  const checkUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/login');
+      }
+    } catch (error) {
+      console.error('Erro ao verificar usuário:', error);
+      navigate('/login');
+    }
   };
 
-  // Calcular categorias de receitas
-  const calculateIncomeCategories = () => {
-    const incomeTransactions = transactions.filter(t => t.type === "income");
-    const categoryTotals: Record<string, number> = {};
-    const total = incomeTransactions.reduce((sum, t) => sum + t.amount, 0);
+  // Preparar dados para os gráficos
+  const expensesByCategory = transactions
+    .filter(t => t.type === "expense")
+    .reduce((acc, curr) => {
+      const category = curr.category;
+      acc[category] = (acc[category] || 0) + Number(curr.amount);
+      return acc;
+    }, {} as Record<string, number>);
 
-    incomeTransactions.forEach(t => {
-      categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
-    });
+  const incomesByCategory = transactions
+    .filter(t => t.type === "income")
+    .reduce((acc, curr) => {
+      const category = curr.category;
+      acc[category] = (acc[category] || 0) + Number(curr.amount);
+      return acc;
+    }, {} as Record<string, number>);
 
-    const colors = ["#0ea5e9", "#f97316", "#8b5cf6", "#22c55e", "#ef4444"];
-    return Object.entries(categoryTotals)
-      .map(([name, value], index) => ({
-        name,
-        value: total > 0 ? Math.round((value / total) * 100) : 0,
-        amount: value,
-        color: colors[index % colors.length],
-      }))
-      .sort((a, b) => b.amount - a.amount);
+  // Cores para cada categoria
+  const categoryColors: Record<string, string> = {
+    // Despesas
+    "alimentacao": "#FF6B6B",
+    "transporte": "#4ECDC4",
+    "moradia": "#45B7D1",
+    "saude": "#96CEB4",
+    "educacao": "#FFEEAD",
+    "lazer": "#D4A5A5",
+    "outros": "#9B9B9B",
+    
+    // Receitas
+    "salario": "#4CAF50",
+    "investimentos": "#2196F3",
+    "freelance": "#9C27B0",
+    "bonus": "#FF9800",
+    "presente": "#E91E63",
+    "outras_receitas": "#607D8B"
   };
 
-  const expenseCategories = calculateExpenseCategories();
-  const incomeCategories = calculateIncomeCategories();
+  // Converter dados para o formato do gráfico
+  const expenseChartData = Object.entries(expensesByCategory).map(([category, value]) => ({
+    name: category.charAt(0).toUpperCase() + category.slice(1).replace("_", " "),
+    value,
+    color: categoryColors[category] || "#9B9B9B"
+  }));
+
+  const incomeChartData = Object.entries(incomesByCategory).map(([category, value]) => ({
+    name: category.charAt(0).toUpperCase() + category.slice(1).replace("_", " "),
+    value,
+    color: categoryColors[category] || "#9B9B9B"
+  }));
 
   if (isLoading) {
     return (
@@ -119,7 +95,7 @@ const Reports = () => {
       <DashboardLayout>
         <div className="flex items-center justify-center h-screen">
           <div className="text-center">
-            <p className="text-red-600">Erro ao carregar dados: {error}</p>
+            <p className="text-red-600">Erro ao carregar dados: {error instanceof Error ? error.message : String(error)}</p>
           </div>
         </div>
       </DashboardLayout>
@@ -128,145 +104,41 @@ const Reports = () => {
 
   return (
     <DashboardLayout>
-      <div className="mb-6 md:mb-8">
-        <h1 className="text-xl md:text-2xl font-bold mb-2">Relatórios Financeiros</h1>
-        <p className="text-gray-600 text-sm md:text-base">
-          Analise e exporte relatórios detalhados das suas finanças
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold mb-2">Relatórios</h1>
+        <p className="text-gray-600">
+          Análise detalhada das suas finanças
         </p>
       </div>
 
       {/* Resumo Financeiro */}
-      <div className="grid gap-4 md:grid-cols-4 mb-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Receitas Totais</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <ArrowUpCircle className="h-4 w-4 text-green-500 mr-2" />
-              <span className="text-2xl font-bold text-green-500">
-                {formatCurrency(totalIncome)}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Despesas Totais</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <ArrowDownCircle className="h-4 w-4 text-red-500 mr-2" />
-              <span className="text-2xl font-bold text-red-500">
-                {formatCurrency(totalExpenses)}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Saldo</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <span className={`text-2xl font-bold ${balance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                {formatCurrency(balance)}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Taxa de Economia</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <span className={`text-2xl font-bold ${savingsRate >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                {savingsRate}%
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid md:grid-cols-2 gap-4 mb-6">
+        <div className="bg-white p-4 rounded-lg shadow-sm">
+          <h2 className="text-lg font-semibold mb-2">Receitas Totais</h2>
+          <p className="text-2xl text-green-600">{formatCurrency(totalIncome)}</p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow-sm">
+          <h2 className="text-lg font-semibold mb-2">Despesas Totais</h2>
+          <p className="text-2xl text-red-600">{formatCurrency(totalExpenses)}</p>
+        </div>
       </div>
 
       {/* Gráficos */}
-      <div className="grid gap-6">
-        {/* Gráficos de Linha */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Receitas ao Longo do Tempo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FinancialChart transactions={transactions} type="income" />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Despesas ao Longo do Tempo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FinancialChart transactions={transactions} type="expense" />
-            </CardContent>
-          </Card>
+      <div className="grid md:grid-cols-2 gap-6 mb-6">
+        <div className="bg-white p-4 rounded-lg shadow-sm">
+          <PieChart3D data={expenseChartData} title="Despesas por Categoria" />
         </div>
-
-        {/* Categorias */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Categorias de Receitas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {incomeCategories.map((category) => (
-                  <div key={category.name} className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div 
-                        className="w-3 h-3 rounded-full mr-2"
-                        style={{ backgroundColor: category.color }}
-                      />
-                      <span>{category.name}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-500">{formatCurrency(category.amount)}</span>
-                      <span className="text-sm font-medium">{category.value}%</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Categorias de Despesas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {expenseCategories.map((category) => (
-                  <div key={category.name} className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div 
-                        className="w-3 h-3 rounded-full mr-2"
-                        style={{ backgroundColor: category.color }}
-                      />
-                      <span>{category.name}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-500">{formatCurrency(category.amount)}</span>
-                      <span className="text-sm font-medium">{category.value}%</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="bg-white p-4 rounded-lg shadow-sm">
+          <PieChart3D data={incomeChartData} title="Receitas por Categoria" />
         </div>
+      </div>
+
+      {/* Lista de Transações */}
+      <div className="bg-white rounded-lg shadow-sm">
+        <TransactionList 
+          transactions={transactions} 
+          title="Todas as Transações" 
+        />
       </div>
     </DashboardLayout>
   );
