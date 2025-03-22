@@ -144,7 +144,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {isSidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm lg:hidden"
-          onClick={() => setIsSidebarOpen(true)}
+          onClick={() => setIsSidebarOpen(false)}
         ></div>
       )}
 
@@ -167,7 +167,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             {/* Close button (mobile only) */}
             <button
               className="absolute right-4 top-4 p-1 rounded-full lg:hidden hover:bg-gray-100"
-              onClick={() => setIsSidebarOpen(true)}
+              onClick={() => setIsSidebarOpen(false)}
             >
               <X className="h-5 w-5" />
             </button>
@@ -209,7 +209,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <header className="sticky top-0 z-30 bg-white shadow-sm h-16 flex items-center px-6">
           <button
             className="p-1 rounded-md lg:hidden"
-            onClick={() => setIsSidebarOpen(true)}
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           >
             <Menu className="h-6 w-6" />
           </button>
