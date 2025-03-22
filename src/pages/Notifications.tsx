@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bell, PlusCircle, Trash2 } from "lucide-react";
-import { toast } from "sonner";
 import { notificationService, Notification } from "@/services/notificationService";
 
 const Notifications = () => {
@@ -40,7 +39,6 @@ const Notifications = () => {
       setNotifications(data);
     } catch (error) {
       console.error('Erro ao buscar notificações:', error);
-      toast.error('Erro ao carregar notificações');
     } finally {
       setIsLoading(false);
     }
@@ -48,30 +46,25 @@ const Notifications = () => {
 
   const handleAddNotification = async () => {
     if (!newMessage || !scheduledDate) {
-      toast.error('Por favor, preencha todos os campos');
       return;
     }
 
     try {
       await notificationService.createNotification(newMessage, scheduledDate);
-      toast.success('Notificação agendada com sucesso!');
       setNewMessage("");
       setScheduledDate("");
       fetchNotifications();
     } catch (error) {
       console.error('Erro ao adicionar notificação:', error);
-      toast.error('Erro ao agendar notificação');
     }
   };
 
   const handleDeleteNotification = async (id: string) => {
     try {
       await notificationService.deleteNotification(id);
-      toast.success('Notificação excluída com sucesso!');
       fetchNotifications();
     } catch (error) {
       console.error('Erro ao excluir notificação:', error);
-      toast.error('Erro ao excluir notificação');
     }
   };
 

@@ -30,22 +30,59 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
+import { notificationService, Notification } from "@/services/notificationService";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { signOut } = useAuth();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  // Close sidebar when navigating on mobile
   useEffect(() => {
-    setSidebarOpen(true);
-  }, [location.pathname]);
+    checkUser();
+    fetchNotifications();
+    // Verifica notificações a cada minuto
+    const interval = setInterval(fetchNotifications, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const checkUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/login');
+      }
+    } catch (error) {
+      console.error('Erro ao verificar usuário:', error);
+      navigate('/login');
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const data = await notificationService.checkScheduledNotifications();
+      setNotifications(data);
+      setUnreadCount(data.length);
+    } catch (error) {
+      console.error('Erro ao buscar notificações:', error);
+    }
+  };
+
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await notificationService.markAsRead(id);
+      fetchNotifications();
+    } catch (error) {
+      console.error('Erro ao marcar notificação como lida:', error);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -57,6 +94,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       toast.error("Erro ao terminar sessão");
     }
   };
+
+  // Se estiver na página 404, não mostra o layout
+  if (location.pathname === "*") {
+    return <>{children}</>;
+  }
 
   const navigation = [
     {
@@ -99,17 +141,17 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile sidebar backdrop */}
-      {sidebarOpen && (
+      {isSidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm lg:hidden"
-          onClick={() => setSidebarOpen(true)}
+          onClick={() => setIsSidebarOpen(true)}
         ></div>
       )}
 
       {/* Sidebar */}
       <aside
         className={`fixed top-0 left-0 z-50 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex flex-col h-full">
@@ -125,7 +167,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             {/* Close button (mobile only) */}
             <button
               className="absolute right-4 top-4 p-1 rounded-full lg:hidden hover:bg-gray-100"
-              onClick={() => setSidebarOpen(true)}
+              onClick={() => setIsSidebarOpen(true)}
             >
               <X className="h-5 w-5" />
             </button>
@@ -167,7 +209,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <header className="sticky top-0 z-30 bg-white shadow-sm h-16 flex items-center px-6">
           <button
             className="p-1 rounded-md lg:hidden"
-            onClick={() => setSidebarOpen(true)}
+            onClick={() => setIsSidebarOpen(true)}
           >
             <Menu className="h-6 w-6" />
           </button>
@@ -178,32 +220,48 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             {/* Notifications dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-1 rounded-full hover:bg-gray-100">
+                <button className="p-1 rounded-full hover:bg-gray-100 relative">
                   <Bell className="h-5 w-5 text-gray-600" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                      {unreadCount}
+                    </span>
+                  )}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-80">
                 <DropdownMenuLabel>Notificações</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <div className="max-h-60 overflow-y-auto">
-                  <DropdownMenuItem className="p-3">
-                    <div>
-                      <p className="font-medium">Despesa recorrente</p>
-                      <p className="text-sm text-gray-500">Renda está para pagamento em 5 dias</p>
-                      <p className="text-xs text-gray-400 mt-1">Hoje, 10:45</p>
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="p-3">
-                    <div>
-                      <p className="font-medium">Alerta de orçamento</p>
-                      <p className="text-sm text-gray-500">Orçamento de Alimentação está 80% utilizado</p>
-                      <p className="text-xs text-gray-400 mt-1">Ontem, 15:30</p>
-                    </div>
-                  </DropdownMenuItem>
+                  {notifications.length === 0 ? (
+                    <DropdownMenuItem className="p-3">
+                      <div className="text-center text-gray-500">
+                        Nenhuma notificação
+                      </div>
+                    </DropdownMenuItem>
+                  ) : (
+                    notifications.map((notification) => (
+                      <DropdownMenuItem 
+                        key={notification.id}
+                        className="p-3 cursor-pointer"
+                        onClick={() => handleMarkAsRead(notification.id)}
+                      >
+                        <div>
+                          <p className="font-medium">Notificação</p>
+                          <p className="text-sm text-gray-500">{notification.message}</p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {new Date(notification.scheduled_date).toLocaleString('pt-BR')}
+                          </p>
+                        </div>
+                      </DropdownMenuItem>
+                    ))
+                  )}
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="justify-center">
-                  <Link to="#" className="text-primary text-sm">Ver todas as notificações</Link>
+                  <Link to="/notifications" className="text-primary text-sm">
+                    Ver todas as notificações
+                  </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
