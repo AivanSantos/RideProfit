@@ -42,6 +42,9 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchTransactions = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
       const { data, error } = await supabase
         .from("transactions")
         .select("*")
@@ -64,9 +67,12 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
 
   const addTransaction = async (transaction: NewTransaction) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
       const { data, error } = await supabase
         .from("transactions")
-        .insert([transaction])
+        .insert([{ ...transaction, user_id: user.id }])
         .select()
         .single();
 
@@ -80,9 +86,12 @@ export const TransactionProvider = ({ children }: { children: ReactNode }) => {
 
   const updateTransaction = async (id: string, transaction: NewTransaction) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
       const { data, error } = await supabase
         .from("transactions")
-        .update(transaction)
+        .update({ ...transaction, user_id: user.id })
         .eq("id", id)
         .select()
         .single();
