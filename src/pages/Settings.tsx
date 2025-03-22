@@ -27,29 +27,84 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { Switch } from "@/components/ui/switch";
-import { useSettings } from "@/contexts/SettingsContext";
 
 const Settings = () => {
   const navigate = useNavigate();
-  const { settings, updateSettings } = useSettings();
-  const [localSettings, setLocalSettings] = useState(settings);
+  const [settings, setSettings] = useState({
+    notifications: true,
+    dark_mode: false,
+    language: "pt",
+    currency: "EUR",
+    timezone: "Europe/Lisbon"
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setLocalSettings(settings);
-    setIsLoading(false);
-  }, [settings]);
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) throw userError;
+      if (!user) {
+        navigate('/login');
+        return;
+      }
+
+      // Buscar configurações do usuário
+      const { data: userSettings, error: settingsError } = await supabase
+        .from('user_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (settingsError && settingsError.code !== 'PGRST116') {
+        throw settingsError;
+      }
+
+      if (userSettings) {
+        setSettings({
+          notifications: userSettings.notifications,
+          dark_mode: userSettings.dark_mode,
+          language: userSettings.language,
+          currency: userSettings.currency,
+          timezone: userSettings.timezone
+        });
+      } else {
+        // Criar configurações padrão se não existirem
+        const { error: insertError } = await supabase
+          .from('user_settings')
+          .insert([{
+            user_id: user.id,
+            notifications: true,
+            dark_mode: false,
+            language: "pt",
+            currency: "EUR",
+            timezone: "Europe/Lisbon"
+          }]);
+
+        if (insertError) throw insertError;
+      }
+    } catch (error) {
+      console.error('Erro ao carregar configurações:', error);
+      toast.error('Erro ao carregar configurações. Por favor, tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setLocalSettings(prev => ({
+    setSettings(prev => ({
       ...prev,
       [name]: value
     }));
   };
 
   const handleToggle = (name: string) => {
-    setLocalSettings(prev => ({
+    setSettings(prev => ({
       ...prev,
       [name]: !prev[name as keyof typeof prev]
     }));
@@ -57,7 +112,21 @@ const Settings = () => {
 
   const handleSaveSettings = async () => {
     try {
-      await updateSettings(localSettings);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Usuário não autenticado');
+
+      const { error } = await supabase
+        .from('user_settings')
+        .upsert({
+          user_id: user.id,
+          notifications: settings.notifications,
+          dark_mode: settings.dark_mode,
+          language: settings.language,
+          currency: settings.currency,
+          timezone: settings.timezone
+        });
+
+      if (error) throw error;
       toast.success("Configurações atualizadas com sucesso!");
     } catch (error) {
       console.error('Erro ao salvar configurações:', error);
@@ -116,7 +185,7 @@ const Settings = () => {
                       </p>
                     </div>
                     <Switch
-                      checked={localSettings.notifications}
+                      checked={settings.notifications}
                       onCheckedChange={() => handleToggle('notifications')}
                     />
                   </div>
@@ -133,7 +202,7 @@ const Settings = () => {
                       </p>
                     </div>
                     <Switch
-                      checked={localSettings.dark_mode}
+                      checked={settings.dark_mode}
                       onCheckedChange={() => handleToggle('dark_mode')}
                     />
                   </div>
@@ -147,7 +216,7 @@ const Settings = () => {
                     <select
                       id="language"
                       name="language"
-                      value={localSettings.language}
+                      value={settings.language}
                       onChange={handleChange}
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
@@ -161,14 +230,13 @@ const Settings = () => {
                     <select
                       id="currency"
                       name="currency"
-                      value={localSettings.currency}
+                      value={settings.currency}
                       onChange={handleChange}
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
                       <option value="EUR">EUR (€)</option>
                       <option value="USD">USD ($)</option>
                       <option value="GBP">GBP (£)</option>
-                      <option value="BRL">BRL (R$)</option>
                     </select>
                   </div>
                   <div className="space-y-2 md:col-span-2">
@@ -176,12 +244,12 @@ const Settings = () => {
                     <select
                       id="timezone"
                       name="timezone"
-                      value={localSettings.timezone}
+                      value={settings.timezone}
                       onChange={handleChange}
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
+                      <option value="America/Sao_Paulo">Brasil (GMT-3)</option>
                       <option value="Europe/Lisbon">Lisboa (GMT+0)</option>
-                      <option value="America/Sao_Paulo">São Paulo (GMT-3)</option>
                       <option value="America/New_York">Nova York (GMT-4)</option>
                       <option value="Asia/Tokyo">Tóquio (GMT+9)</option>
                     </select>

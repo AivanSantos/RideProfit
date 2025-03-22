@@ -133,30 +133,30 @@ const Reports = () => {
         <div className="bg-white p-4 rounded-lg shadow-sm">
           <h2 className="text-lg font-semibold mb-2">Receitas Totais</h2>
           <p className="text-2xl text-green-600">{formatCurrency(totalIncome)}</p>
-        </div>
+          </div>
         <div className="bg-white p-4 rounded-lg shadow-sm">
           <h2 className="text-lg font-semibold mb-2">Despesas Totais</h2>
           <p className="text-2xl text-red-600">{formatCurrency(totalExpenses)}</p>
-        </div>
+            </div>
       </div>
 
       {/* Gráficos */}
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         <div className="bg-white p-4 rounded-lg shadow-sm">
           <PieChart3D data={expenseChartData} title="Despesas por Categoria" />
-        </div>
+          </div>
         <div className="bg-white p-4 rounded-lg shadow-sm">
           <PieChart3D data={incomeChartData} title="Receitas por Categoria" />
-        </div>
-      </div>
-
+              </div>
+          </div>
+          
       {/* Lista de Transações */}
       <div className="bg-white rounded-lg shadow-sm">
         <TransactionList 
           transactions={transactions} 
           title="Todas as Transações" 
         />
-      </div>
+              </div>
     </DashboardLayout>
   );
 };
