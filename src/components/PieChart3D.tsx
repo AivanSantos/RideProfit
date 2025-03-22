@@ -13,42 +13,11 @@ interface PieChart3DProps {
 }
 
 const PieChart3D = ({ data, title }: PieChart3DProps) => {
-  // Criar efeito 3D com gradientes
-  const gradients = data.map((entry, index) => ({
-    id: `gradient-${index}`,
-    color: entry.color,
-  }));
-
   return (
     <div className="h-[400px] w-full">
       <h3 className="text-lg font-semibold mb-4">{title}</h3>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
-          {/* Definição dos gradientes para efeito 3D */}
-          <defs>
-            {gradients.map((gradient) => (
-              <linearGradient
-                key={gradient.id}
-                id={gradient.id}
-                x1="0"
-                y1="0"
-                x2="0"
-                y2="1"
-              >
-                <stop
-                  offset="0%"
-                  stopColor={gradient.color}
-                  stopOpacity={1}
-                />
-                <stop
-                  offset="100%"
-                  stopColor={gradient.color}
-                  stopOpacity={0.7}
-                />
-              </linearGradient>
-            ))}
-          </defs>
-
           {/* Sombra do gráfico */}
           <Pie
             data={data}
@@ -76,7 +45,7 @@ const PieChart3D = ({ data, title }: PieChart3DProps) => {
             {data.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
-                fill={`url(#gradient-${index})`}
+                fill={entry.color}
                 stroke={entry.color}
                 strokeWidth={1}
               />
@@ -100,7 +69,7 @@ const PieChart3D = ({ data, title }: PieChart3DProps) => {
             {data.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
-                fill={`url(#gradient-${index})`}
+                fill={entry.color}
                 stroke={entry.color}
                 strokeWidth={1}
               />
@@ -120,6 +89,12 @@ const PieChart3D = ({ data, title }: PieChart3DProps) => {
             formatter={(value: string) => (
               <span className="text-sm">{value}</span>
             )}
+            payload={data.map((entry, index) => ({
+              value: entry.name,
+              type: "circle",
+              color: entry.color,
+              id: `legend-${index}`
+            }))}
           />
 
           <Tooltip
