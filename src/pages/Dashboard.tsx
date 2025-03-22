@@ -6,7 +6,7 @@ import TransactionList from "@/components/TransactionList";
 import FinancialChart from "@/components/FinancialChart";
 import { Button } from "@/components/ui/button";
 import AddTransactionModal from "@/components/AddTransactionModal";
-import { PlusCircle, Trash2 } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTransactions } from "@/contexts/TransactionContext";
 import { toast } from "sonner";
@@ -45,10 +45,10 @@ const Dashboard = () => {
   const { 
     transactions, 
     addTransaction, 
-    loading, 
+    isLoading, 
     error,
     totalIncome,
-    totalExpense,
+    totalExpenses,
     balance,
     deleteTransaction
   } = useTransactions();
@@ -73,7 +73,7 @@ const Dashboard = () => {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-screen">
@@ -91,7 +91,7 @@ const Dashboard = () => {
       <DashboardLayout>
         <div className="flex items-center justify-center h-screen">
           <div className="text-center">
-            <p className="text-red-600">Erro ao carregar dados: {error}</p>
+            <p className="text-red-600">Erro ao carregar dados: {error instanceof Error ? error.message : String(error)}</p>
           </div>
         </div>
       </DashboardLayout>
@@ -111,7 +111,7 @@ const Dashboard = () => {
       <DashboardSummary
         balance={balance}
         income={totalIncome}
-        expenses={totalExpense}
+        expenses={totalExpenses}
         incomeChange={0}
         expensesChange={0}
       />
@@ -189,14 +189,12 @@ const Dashboard = () => {
       <AddTransactionModal
         isOpen={isExpenseModalOpen}
         onClose={() => setIsExpenseModalOpen(false)}
-        onAddTransaction={handleAddTransaction}
         type="expense"
       />
       
       <AddTransactionModal
         isOpen={isIncomeModalOpen}
         onClose={() => setIsIncomeModalOpen(false)}
-        onAddTransaction={handleAddTransaction}
         type="income"
       />
     </DashboardLayout>

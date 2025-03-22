@@ -46,10 +46,10 @@ const Reports = () => {
   
   const { 
     transactions, 
-    loading, 
+    isLoading, 
     error,
     totalIncome,
-    totalExpense,
+    totalExpenses,
     balance
   } = useTransactions();
 
@@ -101,7 +101,7 @@ const Reports = () => {
   const expenseCategories = calculateExpenseCategories();
   const incomeCategories = calculateIncomeCategories();
 
-  if (loading) {
+  if (isLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-screen">
@@ -159,7 +159,7 @@ const Reports = () => {
             <div className="flex items-center">
               <ArrowDownCircle className="h-4 w-4 text-red-500 mr-2" />
               <span className="text-2xl font-bold text-red-500">
-                {formatCurrency(totalExpense)}
+                {formatCurrency(totalExpenses)}
               </span>
             </div>
           </CardContent>

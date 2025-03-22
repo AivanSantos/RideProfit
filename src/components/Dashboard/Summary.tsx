@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowUpRight, ArrowDownRight, TrendingUp, Wallet } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
