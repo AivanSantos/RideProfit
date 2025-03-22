@@ -39,13 +39,13 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AuthProvider>
-          <TransactionProvider>
-            <ShoppingListProvider>
-              <Toaster />
-              <Sonner />
-              <Router>
-                <SettingsProvider>
+        <Router>
+          <AuthProvider>
+            <SettingsProvider>
+              <TransactionProvider>
+                <ShoppingListProvider>
+                  <Toaster />
+                  <Sonner />
                   <div className="min-h-screen flex flex-col">
                     <Navbar />
                     <main className="flex-grow">
@@ -136,11 +136,11 @@ const App = () => {
                       </Routes>
                     </main>
                   </div>
-                </SettingsProvider>
-              </Router>
-            </ShoppingListProvider>
-          </TransactionProvider>
-        </AuthProvider>
+                </ShoppingListProvider>
+              </TransactionProvider>
+            </SettingsProvider>
+          </AuthProvider>
+        </Router>
       </TooltipProvider>
     </QueryClientProvider>
   );
