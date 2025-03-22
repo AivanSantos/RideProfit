@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import DashboardLayout from "@/components/Dashboard/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,37 +28,37 @@ import {
   Archive
 } from "lucide-react";
 import { toast } from "sonner";
+import { useShoppingList } from "@/contexts/ShoppingListContext";
 
-interface ShoppingItem {
-  id: string;
+interface NewShoppingItem {
+  id?: string;
   name: string;
-  quantity: string;
+  quantity: number;
+  unit: string;
+  category: string;
   completed: boolean;
 }
 
 const ShoppingList = () => {
-  const [items, setItems] = useState<ShoppingItem[]>([]);
   const [newItemName, setNewItemName] = useState("");
-  const [newItemQuantity, setNewItemQuantity] = useState("");
+  const [newItemQuantity, setNewItemQuantity] = useState("1");
+  const [newItemUnit, setNewItemUnit] = useState("unidade");
+  const [newItemCategory, setNewItemCategory] = useState("Geral");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [currentItem, setCurrentItem] = useState<ShoppingItem | null>(null);
+  const [currentItem, setCurrentItem] = useState<NewShoppingItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    // This would be a data fetch in a real app
-    const mockItems: ShoppingItem[] = [
-      { id: "1", name: "Leite", quantity: "2 litros", completed: false },
-      { id: "2", name: "Pão", quantity: "1 pacote", completed: true },
-      { id: "3", name: "Queijo", quantity: "200g", completed: false },
-      { id: "4", name: "Maçãs", quantity: "1kg", completed: false },
-      { id: "5", name: "Detergente", quantity: "1 garrafa", completed: true },
-    ];
-    
-    setItems(mockItems);
-  }, []);
+  const {
+    items,
+    addItem,
+    updateItem,
+    deleteItem,
+    loading,
+    error
+  } = useShoppingList();
 
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
     if (!newItemName.trim()) {
       toast.error("Por favor, insira o nome do item.");
       return;
@@ -68,19 +67,22 @@ const ShoppingList = () => {
     setIsSubmitting(true);
     
     try {
-      const newItem: ShoppingItem = {
-        id: Math.random().toString(36).substring(2, 9),
+      const newItem: NewShoppingItem = {
         name: newItemName,
-        quantity: newItemQuantity || "1",
+        quantity: parseInt(newItemQuantity) || 1,
+        unit: newItemUnit,
+        category: newItemCategory,
         completed: false,
       };
       
-      setItems([...items, newItem]);
+      await addItem(newItem);
       toast.success("Item adicionado com sucesso!");
       
       // Reset form
       setNewItemName("");
-      setNewItemQuantity("");
+      setNewItemQuantity("1");
+      setNewItemUnit("unidade");
+      setNewItemCategory("Geral");
       setIsAddDialogOpen(false);
     } catch (error) {
       toast.error("Erro ao adicionar item.");
@@ -90,7 +92,7 @@ const ShoppingList = () => {
     }
   };
 
-  const handleEditItem = () => {
+  const handleEditItem = async () => {
     if (!currentItem) return;
     
     if (!currentItem.name.trim()) {
@@ -101,11 +103,7 @@ const ShoppingList = () => {
     setIsSubmitting(true);
     
     try {
-      const updatedItems = items.map(item => 
-        item.id === currentItem.id ? currentItem : item
-      );
-      
-      setItems(updatedItems);
+      await updateItem(currentItem.id, currentItem);
       toast.success("Item atualizado com sucesso!");
       
       setIsEditDialogOpen(false);
@@ -118,10 +116,9 @@ const ShoppingList = () => {
     }
   };
 
-  const handleDeleteItem = (id: string) => {
+  const handleDeleteItem = async (id: string) => {
     try {
-      const updatedItems = items.filter(item => item.id !== id);
-      setItems(updatedItems);
+      await deleteItem(id);
       toast.success("Item removido com sucesso!");
     } catch (error) {
       toast.error("Erro ao remover item.");
@@ -129,20 +126,19 @@ const ShoppingList = () => {
     }
   };
 
-  const handleToggleComplete = (id: string) => {
+  const handleToggleComplete = async (id: string) => {
     try {
-      const updatedItems = items.map(item => 
-        item.id === id ? { ...item, completed: !item.completed } : item
-      );
-      
-      setItems(updatedItems);
+      const item = items.find(i => i.id === id);
+      if (item) {
+        await updateItem(id, { ...item, completed: !item.completed });
+      }
     } catch (error) {
       toast.error("Erro ao atualizar item.");
       console.error(error);
     }
   };
 
-  const handleEditClick = (item: ShoppingItem) => {
+  const handleEditClick = (item: NewShoppingItem & { id: string }) => {
     setCurrentItem(item);
     setIsEditDialogOpen(true);
   };
@@ -151,16 +147,41 @@ const ShoppingList = () => {
     toast.success("Lista partilhada com a família!");
   };
 
-  const clearCompletedItems = () => {
+  const clearCompletedItems = async () => {
     try {
-      const updatedItems = items.filter(item => !item.completed);
-      setItems(updatedItems);
+      const completedItems = items.filter(item => item.completed);
+      await Promise.all(completedItems.map(item => deleteItem(item.id)));
       toast.success("Itens concluídos removidos com sucesso!");
     } catch (error) {
       toast.error("Erro ao remover itens concluídos.");
       console.error(error);
     }
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Carregando lista de compras...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <p className="text-red-600">Erro ao carregar dados: {error}</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -237,30 +258,28 @@ const ShoppingList = () => {
                       >
                         {item.name}
                       </Label>
-                      {item.quantity && (
-                        <p className="text-sm text-gray-500">
-                          {item.quantity}
-                        </p>
-                      )}
+                      <p className="text-sm text-gray-500">
+                        {item.quantity} {item.unit} - {item.category}
+                      </p>
                     </div>
                   </div>
                   
                   <div className="flex space-x-2">
                     <Button 
                       variant="ghost" 
-                      size="sm" 
+                      size="sm"
                       onClick={() => handleEditClick(item)}
-                      className="h-8 w-8 p-0"
+                      className="hover:bg-gray-100"
                     >
-                      <Edit className="h-4 w-4 text-gray-500" />
+                      <Edit className="h-4 w-4" />
                     </Button>
                     <Button 
                       variant="ghost" 
-                      size="sm" 
+                      size="sm"
                       onClick={() => handleDeleteItem(item.id)}
-                      className="h-8 w-8 p-0"
+                      className="hover:bg-red-100 hover:text-red-600"
                     >
-                      <Trash2 className="h-4 w-4 text-red-500" />
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -272,42 +291,56 @@ const ShoppingList = () => {
 
       {/* Add Item Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Adicionar Item à Lista de Compras</DialogTitle>
+            <DialogTitle>Adicionar Item</DialogTitle>
             <DialogDescription>
-              Adicione um novo item à sua lista de compras.
+              Adicione um novo item à sua lista de compras
             </DialogDescription>
           </DialogHeader>
-          
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div>
               <Label htmlFor="name">Nome do Item</Label>
               <Input
                 id="name"
                 value={newItemName}
                 onChange={(e) => setNewItemName(e.target.value)}
-                placeholder="Ex: Leite, Pão, etc."
-                autoFocus
+                placeholder="Ex: Leite"
               />
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="quantity">Quantidade (opcional)</Label>
+            <div>
+              <Label htmlFor="quantity">Quantidade</Label>
               <Input
                 id="quantity"
+                type="number"
                 value={newItemQuantity}
                 onChange={(e) => setNewItemQuantity(e.target.value)}
-                placeholder="Ex: 1kg, 2 litros, etc."
+                min="1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="unit">Unidade</Label>
+              <Input
+                id="unit"
+                value={newItemUnit}
+                onChange={(e) => setNewItemUnit(e.target.value)}
+                placeholder="Ex: unidade, kg, litro"
+              />
+            </div>
+            <div>
+              <Label htmlFor="category">Categoria</Label>
+              <Input
+                id="category"
+                value={newItemCategory}
+                onChange={(e) => setNewItemCategory(e.target.value)}
+                placeholder="Ex: Laticínios, Frutas, Limpeza"
               />
             </div>
           </div>
-          
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setIsAddDialogOpen(false)}
-              disabled={isSubmitting}
             >
               Cancelar
             </Button>
@@ -315,7 +348,7 @@ const ShoppingList = () => {
               onClick={handleAddItem}
               disabled={isSubmitting}
             >
-              {isSubmitting ? "A adicionar..." : "Adicionar Item"}
+              {isSubmitting ? "Adicionando..." : "Adicionar Item"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -323,44 +356,58 @@ const ShoppingList = () => {
 
       {/* Edit Item Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar Item da Lista de Compras</DialogTitle>
+            <DialogTitle>Editar Item</DialogTitle>
             <DialogDescription>
-              Edite os detalhes do item selecionado.
+              Modifique os detalhes do item
             </DialogDescription>
           </DialogHeader>
-          
           {currentItem && (
             <div className="space-y-4">
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="edit-name">Nome do Item</Label>
                 <Input
                   id="edit-name"
                   value={currentItem.name}
                   onChange={(e) => setCurrentItem({ ...currentItem, name: e.target.value })}
-                  placeholder="Ex: Leite, Pão, etc."
-                  autoFocus
                 />
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="edit-quantity">Quantidade (opcional)</Label>
+              <div>
+                <Label htmlFor="edit-quantity">Quantidade</Label>
                 <Input
                   id="edit-quantity"
+                  type="number"
                   value={currentItem.quantity}
-                  onChange={(e) => setCurrentItem({ ...currentItem, quantity: e.target.value })}
-                  placeholder="Ex: 1kg, 2 litros, etc."
+                  onChange={(e) => setCurrentItem({ ...currentItem, quantity: parseInt(e.target.value) || 1 })}
+                  min="1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-unit">Unidade</Label>
+                <Input
+                  id="edit-unit"
+                  value={currentItem.unit}
+                  onChange={(e) => setCurrentItem({ ...currentItem, unit: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-category">Categoria</Label>
+                <Input
+                  id="edit-category"
+                  value={currentItem.category}
+                  onChange={(e) => setCurrentItem({ ...currentItem, category: e.target.value })}
                 />
               </div>
             </div>
           )}
-          
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setIsEditDialogOpen(false)}
-              disabled={isSubmitting}
+              onClick={() => {
+                setIsEditDialogOpen(false);
+                setCurrentItem(null);
+              }}
             >
               Cancelar
             </Button>
@@ -368,7 +415,7 @@ const ShoppingList = () => {
               onClick={handleEditItem}
               disabled={isSubmitting}
             >
-              {isSubmitting ? "A atualizar..." : "Guardar Alterações"}
+              {isSubmitting ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </DialogFooter>
         </DialogContent>

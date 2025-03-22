@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import DashboardLayout from "@/components/Dashboard/Layout";
 import DashboardSummary from "@/components/Dashboard/Summary";
 import TransactionList from "@/components/TransactionList";
@@ -7,50 +7,34 @@ import { Button } from "@/components/ui/button";
 import AddTransactionModal from "@/components/AddTransactionModal";
 import { PlusCircle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useAuth } from "@/contexts/AuthContext";
-import { getTransactions, getTransactionStats, Transaction } from "@/lib/supabase-operations";
+import { useTransactions } from "@/contexts/TransactionContext";
 import { toast } from "sonner";
+
+interface NewTransaction {
+  type: 'income' | 'expense';
+  amount: number;
+  description: string;
+  category: string;
+  date: string;
+}
 
 const Dashboard = () => {
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [stats, setStats] = useState({
-    totalIncome: 0,
-    totalExpenses: 0,
-    balance: 0,
-  });
-  const [loading, setLoading] = useState(true);
   const isMobile = useIsMobile();
-  const { user } = useAuth();
+  const { 
+    transactions, 
+    addTransaction, 
+    loading, 
+    error,
+    totalIncome,
+    totalExpense,
+    balance
+  } = useTransactions();
 
-  useEffect(() => {
-    if (user) {
-      loadData();
-    }
-  }, [user]);
-
-  const loadData = async () => {
+  const handleAddTransaction = async (newTransaction: NewTransaction) => {
     try {
-      setLoading(true);
-      const [transactionsData, statsData] = await Promise.all([
-        getTransactions(user!.id),
-        getTransactionStats(user!.id)
-      ]);
-      
-      setTransactions(transactionsData);
-      setStats(statsData);
-    } catch (error) {
-      console.error("Erro ao carregar dados:", error);
-      toast.error("Erro ao carregar dados do dashboard");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddTransaction = async (newTransaction: Transaction) => {
-    try {
-      await loadData();
+      await addTransaction(newTransaction);
       toast.success("Transação adicionada com sucesso!");
     } catch (error) {
       console.error("Erro ao adicionar transação:", error);
@@ -71,6 +55,18 @@ const Dashboard = () => {
     );
   }
 
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <p className="text-red-600">Erro ao carregar dados: {error}</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="mb-6 md:mb-8">
@@ -82,11 +78,11 @@ const Dashboard = () => {
 
       {/* Summary Cards */}
       <DashboardSummary
-        balance={stats.balance}
-        income={stats.totalIncome}
-        expenses={stats.totalExpenses}
-        incomeChange={0} // TODO: Implementar cálculo de variação
-        expensesChange={0} // TODO: Implementar cálculo de variação
+        balance={balance}
+        income={totalIncome}
+        expenses={totalExpense}
+        incomeChange={0}
+        expensesChange={0}
       />
 
       {/* Quick Actions */}
