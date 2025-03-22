@@ -56,27 +56,18 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
 
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'user_id' | 'created_at'>) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
-
       const { data, error } = await supabase
         .from('transactions')
-        .insert([
-          {
-            ...transaction,
-            user_id: user.id,
-          }
-        ])
+        .insert([transaction])
         .select()
         .single();
 
       if (error) throw error;
-      if (data) {
-        setTransactions(prev => [data, ...prev]);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao adicionar transação');
-      throw err;
+
+      setTransactions(prev => [...prev, data]);
+    } catch (error) {
+      console.error('Erro ao adicionar transação:', error);
+      throw error;
     }
   };
 
@@ -88,10 +79,11 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
         .eq('id', id);
 
       if (error) throw error;
+
       setTransactions(prev => prev.filter(t => t.id !== id));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao deletar transação');
-      throw err;
+    } catch (error) {
+      console.error('Erro ao excluir transação:', error);
+      throw error;
     }
   };
 

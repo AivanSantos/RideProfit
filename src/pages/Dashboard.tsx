@@ -5,7 +5,7 @@ import TransactionList from "@/components/TransactionList";
 import FinancialChart from "@/components/FinancialChart";
 import { Button } from "@/components/ui/button";
 import AddTransactionModal from "@/components/AddTransactionModal";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Trash2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTransactions } from "@/contexts/TransactionContext";
 import { toast } from "sonner";
@@ -29,16 +29,27 @@ const Dashboard = () => {
     error,
     totalIncome,
     totalExpense,
-    balance
+    balance,
+    deleteTransaction
   } = useTransactions();
 
   const handleAddTransaction = async (newTransaction: NewTransaction) => {
     try {
       await addTransaction(newTransaction);
-      toast.success("Transação adicionada com sucesso!");
+      setIsExpenseModalOpen(false);
+      setIsIncomeModalOpen(false);
+      toast.success('Transação adicionada com sucesso!');
     } catch (error) {
-      console.error("Erro ao adicionar transação:", error);
-      toast.error("Erro ao adicionar transação");
+      toast.error('Erro ao adicionar transação');
+    }
+  };
+
+  const handleDeleteTransaction = async (id: string) => {
+    try {
+      await deleteTransaction(id);
+      toast.success('Transação excluída com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao excluir transação');
     }
   };
 
