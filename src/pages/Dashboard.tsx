@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/Dashboard/Layout";
 import DashboardSummary from "@/components/Dashboard/Summary";
 import TransactionList from "@/components/TransactionList";
@@ -8,7 +9,8 @@ import AddTransactionModal from "@/components/AddTransactionModal";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTransactions } from "@/contexts/TransactionContext";
-import { toast } from "sonner";
+import { toast } from 'sonner';
+import { supabase } from "@/lib/supabase";
 
 interface NewTransaction {
   type: 'income' | 'expense';
@@ -19,9 +21,21 @@ interface NewTransaction {
 }
 
 const Dashboard = () => {
-  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
-  const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
+  const navigate = useNavigate();
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [showIncomeModal, setShowIncomeModal] = useState(false);
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/login');
+      }
+    };
+    checkUser();
+  }, [navigate]);
+
   const { 
     transactions, 
     addTransaction, 
@@ -36,11 +50,16 @@ const Dashboard = () => {
   const handleAddTransaction = async (newTransaction: NewTransaction) => {
     try {
       await addTransaction(newTransaction);
-      setIsExpenseModalOpen(false);
-      setIsIncomeModalOpen(false);
-      toast.success('Transação adicionada com sucesso!');
+      toast.success(
+        newTransaction.type === 'income' 
+          ? 'Receita adicionada com sucesso!'
+          : 'Despesa adicionada com sucesso!'
+      );
+      setShowIncomeModal(false);
+      setShowExpenseModal(false);
     } catch (error) {
       toast.error('Erro ao adicionar transação');
+      console.error('Erro ao adicionar transação:', error);
     }
   };
 
@@ -99,22 +118,22 @@ const Dashboard = () => {
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-3 my-4 md:my-6">
         <Button 
-          onClick={() => setIsExpenseModalOpen(true)}
-          variant="outline"
-          className="hover-lift text-xs md:text-sm"
-          size={isMobile ? "sm" : "default"}
-        >
-          <PlusCircle className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
-          Adicionar Despesa
-        </Button>
-        <Button 
-          onClick={() => setIsIncomeModalOpen(true)}
+          onClick={() => setShowIncomeModal(true)}
           variant="outline"
           className="hover-lift text-xs md:text-sm"
           size={isMobile ? "sm" : "default"}
         >
           <PlusCircle className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
           Adicionar Receita
+        </Button>
+        <Button 
+          onClick={() => setShowExpenseModal(true)}
+          variant="outline"
+          className="hover-lift text-xs md:text-sm"
+          size={isMobile ? "sm" : "default"}
+        >
+          <PlusCircle className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+          Adicionar Despesa
         </Button>
       </div>
 
@@ -143,7 +162,7 @@ const Dashboard = () => {
             <p className="text-gray-500 mb-4 text-sm md:text-base">Sem transações registadas. Adicione despesas ou receitas para ver aqui.</p>
             <div className="flex justify-center gap-3">
               <Button 
-                onClick={() => setIsExpenseModalOpen(true)}
+                onClick={() => setShowExpenseModal(true)}
                 variant="outline"
                 className="text-xs md:text-sm"
                 size={isMobile ? "sm" : "default"}
@@ -152,7 +171,7 @@ const Dashboard = () => {
                 Adicionar Despesa
               </Button>
               <Button 
-                onClick={() => setIsIncomeModalOpen(true)}
+                onClick={() => setShowIncomeModal(true)}
                 variant="outline"
                 className="text-xs md:text-sm"
                 size={isMobile ? "sm" : "default"}
@@ -167,15 +186,15 @@ const Dashboard = () => {
 
       {/* Modals */}
       <AddTransactionModal
-        isOpen={isExpenseModalOpen}
-        onClose={() => setIsExpenseModalOpen(false)}
+        isOpen={showExpenseModal}
+        onClose={() => setShowExpenseModal(false)}
         onAddTransaction={handleAddTransaction}
         type="expense"
       />
       
       <AddTransactionModal
-        isOpen={isIncomeModalOpen}
-        onClose={() => setIsIncomeModalOpen(false)}
+        isOpen={showIncomeModal}
+        onClose={() => setShowIncomeModal(false)}
         onAddTransaction={handleAddTransaction}
         type="income"
       />

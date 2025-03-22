@@ -30,29 +30,40 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const checkUserAndFetch = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          setError('Usuário não autenticado');
-          setLoading(false);
-          return;
-        }
-        await fetchTransactions();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erro ao verificar usuário');
-        setLoading(false);
+  const fetchTransactions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setError('Usuário não autenticado');
+        return;
       }
-    };
 
-    checkUserAndFetch();
+      const { data, error: dbError } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('date', { ascending: false });
 
-    // Inscrever-se para mudanças na autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        fetchTransactions();
-      } else {
+      if (dbError) throw dbError;
+      setTransactions(data || []);
+    } catch (err) {
+      console.error('Erro ao carregar transações:', err);
+      setError(err instanceof Error ? err.message : 'Erro ao carregar transações');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTransactions();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        await fetchTransactions();
+      } else if (event === 'SIGNED_OUT') {
         setTransactions([]);
         setError('Usuário não autenticado');
       }
@@ -62,26 +73,6 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
       subscription.unsubscribe();
     };
   }, []);
-
-  const fetchTransactions = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
-
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false });
-
-      if (error) throw error;
-      setTransactions(data || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao carregar transações');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'user_id' | 'created_at'>) => {
     try {
@@ -101,6 +92,7 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
       if (!data) throw new Error('Nenhum dado retornado após inserção');
 
       setTransactions(prev => [data, ...prev]);
+      await fetchTransactions(); // Recarrega todas as transações para garantir sincronização
       return data;
     } catch (error) {
       console.error('Erro ao adicionar transação:', error);
@@ -118,6 +110,7 @@ export function TransactionProvider({ children }: { children: React.ReactNode })
       if (error) throw error;
 
       setTransactions(prev => prev.filter(t => t.id !== id));
+      await fetchTransactions(); // Recarrega todas as transações para garantir sincronização
     } catch (error) {
       console.error('Erro ao excluir transação:', error);
       throw error;
