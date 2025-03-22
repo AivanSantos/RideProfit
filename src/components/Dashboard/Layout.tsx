@@ -14,6 +14,8 @@ import {
   User,
   Bell,
   Users,
+  Receipt,
+  BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -26,13 +28,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -40,16 +44,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   // Close sidebar when navigating on mobile
   useEffect(() => {
-    setSidebarOpen(false);
+    setSidebarOpen(true);
   }, [location.pathname]);
 
   const handleLogout = async () => {
     try {
-      await signOut();
+      await supabase.auth.signOut();
       toast.success("Sessão terminada com sucesso!");
       navigate("/login");
     } catch (error) {
-      console.error("Erro ao terminar sessão:", error);
+      console.error("Erro ao fazer logout:", error);
       toast.error("Erro ao terminar sessão");
     }
   };
@@ -80,6 +84,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       path: "/reports",
       icon: FileBarChart,
     },
+    {
+      name: "Notificações",
+      path: "/notifications",
+      icon: Bell,
+    },
+    {
+      name: "Transações",
+      path: "/transactions",
+      icon: Receipt,
+    },
   ];
 
   return (
@@ -88,7 +102,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm lg:hidden"
-          onClick={() => setSidebarOpen(false)}
+          onClick={() => setSidebarOpen(true)}
         ></div>
       )}
 
@@ -111,7 +125,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             {/* Close button (mobile only) */}
             <button
               className="absolute right-4 top-4 p-1 rounded-full lg:hidden hover:bg-gray-100"
-              onClick={() => setSidebarOpen(false)}
+              onClick={() => setSidebarOpen(true)}
             >
               <X className="h-5 w-5" />
             </button>
