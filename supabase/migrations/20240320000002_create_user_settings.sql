@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS user_settings (
   user_id UUID REFERENCES auth.users ON DELETE CASCADE,
   notifications BOOLEAN DEFAULT true,
-  darkMode BOOLEAN DEFAULT false,
+  dark_mode BOOLEAN DEFAULT false,
   language TEXT DEFAULT 'pt',
   currency TEXT DEFAULT 'EUR',
   timezone TEXT DEFAULT 'Europe/Lisbon',

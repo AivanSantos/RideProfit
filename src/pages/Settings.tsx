@@ -32,7 +32,7 @@ const Settings = () => {
   const navigate = useNavigate();
   const [settings, setSettings] = useState({
     notifications: true,
-    darkMode: false,
+    dark_mode: false,
     language: "pt",
     currency: "EUR",
     timezone: "Europe/Lisbon"
@@ -73,7 +73,7 @@ const Settings = () => {
           .insert([{
             user_id: user.id,
             notifications: true,
-            darkMode: false,
+            dark_mode: false,
             language: "pt",
             currency: "EUR",
             timezone: "Europe/Lisbon"
@@ -192,8 +192,8 @@ const Settings = () => {
                       </p>
                     </div>
                     <Switch
-                      checked={settings.darkMode}
-                      onCheckedChange={() => handleToggle('darkMode')}
+                      checked={settings.dark_mode}
+                      onCheckedChange={() => handleToggle('dark_mode')}
                     />
                   </div>
                 </div>
