@@ -32,6 +32,7 @@ import { SettingsProvider } from "@/contexts/SettingsContext";
 import PrivateRoute from "@/components/PrivateRoute";
 import AuthCallback from "@/pages/AuthCallback";
 import EmailConfirmed from "@/pages/EmailConfirmed";
+import ResetPassword from "@/pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -136,6 +137,7 @@ const App = () => {
                           }
                         />
                         <Route path="/family" element={<Family />} />
+                        <Route path="/reset-password" element={<ResetPassword />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                     </main>
