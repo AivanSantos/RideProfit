@@ -30,6 +30,8 @@ import Notifications from "./pages/Notifications";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import PrivateRoute from "@/components/PrivateRoute";
+import AuthCallback from "@/pages/AuthCallback";
+import EmailConfirmed from "@/pages/EmailConfirmed";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +61,8 @@ const App = () => {
                         <Route path="/gdpr" element={<GDPR />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
+                        <Route path="/auth/callback" element={<AuthCallback />} />
+                        <Route path="/email-confirmed" element={<EmailConfirmed />} />
                         <Route
                           path="/dashboard"
                           element={
